@@ -1,0 +1,11 @@
+
+
+# Using the passwords saved in /secrets...
+#  Note todo later: Maybe i can save that secrets on my github using the secrets label?
+secrets:
+  db_root_pasword:
+    file: ./secrets/db_root_password.txt
+  db_password:
+    file: ./secrets/db_password.txt
+
+#

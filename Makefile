@@ -9,12 +9,8 @@
 #    Updated: 2025/05/12 19:56:21 by sadoming         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
-
-NAME		:=
-
 # ------------------ #
 # Colors
-
 R	:=	\033[0;31m
 G	:=	\033[0;32m
 Y	:=	\033[0;33m
@@ -27,57 +23,68 @@ DEF	:=	\033[0m
 RG	:=	\033[1;32m
 # ------------------ #
 # Flags:
+COMPOSE			=	docker-compose -f srcs/docker-compose.yml
+COMPOSE_DOWN_FLAGS	=	--volumes --remove-orphans
 # ------------------ #
-# Directories:
-
-# SRC DIR
-SRC_DIR		:=	./srcs/
+# Services:
+MARIADB	:= mariadb
+#
+#
+# ------------------ #
 
 # ******************************************************************************* #
-author:
-	@echo "$(P)~ **************************************** ~"
-	@echo " ~\t      Made by Sadoming \t         ~"
-	@echo "~ **************************************** ~$(DEF)\n"
 #-------------------------------------------------------------#
-#-------------------------------------------------------------#
-
-all: $(NAME)
+all: check_group build up
 	@echo "$(RG)\n~ **************************************** ~\n"
-	@echo "  ~\t     $(NAME) is ready!\t\t ~\n"
+	@echo "  ~\t\t     All Ready!\t\t ~\n"
 	@echo "~ **************************************** ~$(DEF)\n"
 	@make -s author
-
+#-------------------------------------------------------------#
+author:
+        @echo "$(P)~ **************************************** ~"
+        @echo " ~\t      Made by Sadoming \t         ~"
+        @echo "~ **************************************** ~$(DEF)\n"
+#-------------------------------------------------------------#
 #-------------------------------------------------------------#
 help:
 	@echo "\033[1;37m\n ~ Posible comands:\n"
-	@echo "\t~ \t\t\t #-> Make $(NAME)\n"
-	@echo "\t~ all  \t\t #-> Make $(NAME)\n"
-	@echo "\t~ clean \t #-> Clean *.o\n"
-	@echo "\t~ fclean \t #-> Clean all\n"
+	@echo "\t~ \t\t\t #-> Buid all the services\n"
+	@echo "\t~ all  \t\t #-> Build all the services\n"
+	@echo "\t~ clean \t #-> Clean all\n"
 	@echo "\t~ clear \t #-> Clean all & clear\n"
-	@echo "\t~ re   \t\t #-> Redo $(NAME)\n"
+	@echo "\t~ re   \t\t #-> Reboot all containers\n"
 	@make -s author
 #-------------------------------------------------------------#
 # ******************************************************************************* #
-# Compiling Region:
+# Building Comands:
+build:
+	@$(COMPOSE) build $(MARIADB)
 
-# ********************************************************************************* #
+up:
+	@$(COMPOSE) up -d $(MARIADB)
+
+down:
+	@$(COMPOSE) down $(COMPOSE_DOWN_FLAGS)
+
+re: down build up
+#--------------------
+# Other Comands:
+
+logs:
+	@(COMPOSE) logs -f $(MARIADB)
+
+ps:
+	@$(COMPOSE) ps
 # ********************************************************************************* #
 # Clean region
 
 clean:
-	@/bin/rm -frd $(OBJ_DIR)
-	@echo "$(B)\n All objs & deps removed$(DEF)\n"
-
-fclean: clean
-	@/bin/rm -f $(NAME)
-	@/bin/rm -frd $(NAME).dSYM
+	@$(COMPOSE) down -v --remove-orphans
 	@echo "$(B)\n All cleaned succesfully$(DEF)\n"
 
-clear: fclean
+clear: clean
 	@clear
-
-re: fclean all
 # -------------------- #
-.PHONY: all author clean fclean re
+.PHONY: all author help clean clear re
+.PHONY: build up down logs ps
 # ********************************************************************************** #

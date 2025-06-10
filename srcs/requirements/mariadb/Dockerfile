@@ -9,8 +9,8 @@ RUN apt update && apt upgrade -y \
 COPY conf/mariadb.conf /etc/mysql/my.cnf
 
 #Copy start scripts
-COPY tools/configure.sh /tmp/configure.sh
-RUN chmod +x /tmp/configure.sh
+#COPY tools/configure.sh /tmp/configure.sh
+#RUN chmod +x /tmp/configure.sh
 
 #MariaDB Port
 EXPOSE 3306

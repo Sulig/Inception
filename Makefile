@@ -78,6 +78,7 @@ re: down build up
 # Other Comands:
 init-data:
 	@mkdir -p $(DATA_DIR)
+	@sudo chown -R 999:999 $(DATA_DIR)
 	@chown -R $(USER):$(USER) $(DATA_DIR)
 
 logs:

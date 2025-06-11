@@ -9,6 +9,11 @@
 #    Updated: 2025/05/12 19:56:21 by sadoming         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
+# Change these based on your conf 
+
+USER	:=	sadoming
+
+####################################################################
 # ------------------ #
 # Colors
 R	:=	\033[0;31m
@@ -31,19 +36,21 @@ MARIADB	:= mariadb
 #
 #
 # ------------------ #
+# Directories:
+DATA_DIR	:=	/home/$(USER)/data/volumes/mariadb_data
 
 # ******************************************************************************* #
 #-------------------------------------------------------------#
-all: check_group build up
+all: build up
 	@echo "$(RG)\n~ **************************************** ~\n"
 	@echo "  ~\t\t     All Ready!\t\t ~\n"
 	@echo "~ **************************************** ~$(DEF)\n"
 	@make -s author
 #-------------------------------------------------------------#
 author:
-        @echo "$(P)~ **************************************** ~"
-        @echo " ~\t      Made by Sadoming \t         ~"
-        @echo "~ **************************************** ~$(DEF)\n"
+	@echo "$(P)~ **************************************** ~"
+	@echo " ~\t      Made by Sadoming \t         ~"
+	@echo "~ **************************************** ~$(DEF)\n"
 #-------------------------------------------------------------#
 #-------------------------------------------------------------#
 help:
@@ -60,7 +67,7 @@ help:
 build:
 	@$(COMPOSE) build $(MARIADB)
 
-up:
+up: init-data
 	@$(COMPOSE) up -d $(MARIADB)
 
 down:
@@ -69,6 +76,9 @@ down:
 re: down build up
 #--------------------
 # Other Comands:
+init-data:
+	@mkdir -p $(DATA_DIR)
+	@chown -R $(USER):$(USER) $(DATA_DIR)
 
 logs:
 	@(COMPOSE) logs -f $(MARIADB)
@@ -86,5 +96,5 @@ clear: clean
 	@clear
 # -------------------- #
 .PHONY: all author help clean clear re
-.PHONY: build up down logs ps
+.PHONY: build up down init-data logs ps
 # ********************************************************************************** #

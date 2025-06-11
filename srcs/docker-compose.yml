@@ -3,7 +3,7 @@ version: "3.8"
 services:
   mariadb:
     build:
-      context: ./requeriments/mariadb
+      context: ./requirements/mariadb
       dockerfile: Dockerfile
     image: mariadb:latest
     restart: always

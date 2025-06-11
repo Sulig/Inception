@@ -42,8 +42,8 @@ DATA_DIR	:=	/home/$(USER)/data/volumes/mariadb_data
 # ******************************************************************************* #
 #-------------------------------------------------------------#
 all: build up
-	@echo "$(RG)\n~ **************************************** ~\n"
-	@echo "  ~\t\t     All Ready!\t\t ~\n"
+	@echo "$(RG)\n~ **************************************** ~"
+	@echo " ~\t\t All Ready!\t\t ~"
 	@echo "~ **************************************** ~$(DEF)\n"
 	@make -s author
 #-------------------------------------------------------------#
@@ -64,10 +64,10 @@ help:
 #-------------------------------------------------------------#
 # ******************************************************************************* #
 # Building Comands:
-build:
+build: create-dirs
 	@$(COMPOSE) build $(MARIADB)
 
-up: init-data
+up:
 	@$(COMPOSE) up -d $(MARIADB)
 
 down:
@@ -76,7 +76,7 @@ down:
 re: down build up
 #--------------------
 # Other Comands:
-init-data:
+create-dirs:
 	@mkdir -p $(DATA_DIR)
 	@sudo chown -R 999:999 $(DATA_DIR)
 	@chown -R $(USER):$(USER) $(DATA_DIR)
@@ -97,5 +97,5 @@ clear: clean
 	@clear
 # -------------------- #
 .PHONY: all author help clean clear re
-.PHONY: build up down init-data logs ps
+.PHONY: build up down create-dirs logs ps
 # ********************************************************************************** #

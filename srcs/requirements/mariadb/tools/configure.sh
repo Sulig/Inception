@@ -2,6 +2,12 @@
 
 set -e
 
+# Configurar directorio de datos
+DATA_DIR="/var/lib/mysql"
+mkdir -p ${DATA_DIR}
+chown -R mysql:mysql ${DATA_DIR}
+chmod 755 ${DATA_DIR}
+
 # Leer secrets desde archivos
 MYSQL_ROOT_PASSWORD=$(cat ${MYSQL_ROOT_PASSWORD_FILE})
 MYSQL_PASSWORD=$(cat ${MYSQL_PASSWORD_FILE})

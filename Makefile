@@ -37,7 +37,7 @@ MARIADB	:= mariadb
 #
 # ------------------ #
 # Directories:
-DATA_DIR	:=	/home/$(USER)/data/volumes/mariadb_data
+#DATA_DIR	:=	/home/$(USER)/data/volumes/mariadb_data
 
 # ******************************************************************************* #
 #-------------------------------------------------------------#
@@ -64,7 +64,7 @@ help:
 #-------------------------------------------------------------#
 # ******************************************************************************* #
 # Building Comands:
-build: create-dirs
+build:
 	@$(COMPOSE) build $(MARIADB)
 
 up:
@@ -76,11 +76,6 @@ down:
 re: down build up
 #--------------------
 # Other Comands:
-create-dirs:
-	@mkdir -p $(DATA_DIR)
-	@sudo chown -R 999:999 $(DATA_DIR)
-	@chown -R $(USER):$(USER) $(DATA_DIR)
-
 logs:
 	@(COMPOSE) logs -f $(MARIADB)
 

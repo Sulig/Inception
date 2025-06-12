@@ -5,7 +5,7 @@ services:
     build:
       context: ./requirements/mariadb
       dockerfile: Dockerfile
-    image: mariadb:latest
+    image: mariadb
     restart: always
     networks:
       - backend_net
@@ -25,12 +25,7 @@ networks:
   backend_net:
 
 volumes:
-  mariadb_data:
-    driver: local
-    driver_opts:
-      o: bind
-      type: none
-      device: /home/sadoming/data/volumes/mariadb_data
+  mariadb_data: {}
 
 # Using the passwords saved in /secrets...
 #  Note todo later: Maybe i can save that secrets on my github using the secrets label?

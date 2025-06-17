@@ -1,6 +1,7 @@
 version: "3.8"
 
 services:
+
   mariadb:
     build:
       context: ./requirements/mariadb
@@ -19,6 +20,24 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD_FILE: /run/secrets/db_password
+  
+  wordpress:
+    build:
+      context: ./requirements/wordpress
+      dockerfile: Dockerfile
+    image: wordpress:latest
+    depends_on:
+      - mariadb
+    networks:
+      - backend_net
+    volumes:
+      - wordpress_data:/var/www/html
+    secrets:
+      - db_password
+    environment:
+      WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
   # More services here ----->
 
 networks:
@@ -26,6 +45,7 @@ networks:
 
 volumes:
   mariadb_data: {}
+  wordpress_data: {}
 
 # Using the passwords saved in /secrets...
 #  Note todo later: Maybe i can save that secrets on my github using the secrets label?

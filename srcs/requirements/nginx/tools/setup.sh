@@ -10,8 +10,6 @@ openssl req -x509 -nodes -days 365 \
   -keyout /etc/nginx/certs/localhost.key \
   -out /etc/nginx/certs/localhost.crt
 
-envsubst '$DOMAIN_NAME' \
-  < /etc/nginx/conf.d/default.conf.template \
-  > /etc/nginx/conf.d/default.conf
+envsubst '${DOMAIN_NAME}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf
 
-exec nginx -g 'daemon off;'
+exec nginx -g "daemon off;"

@@ -34,7 +34,7 @@ COMPOSE_DOWN_FLAGS	=	--volumes --remove-orphans
 # Services:
 MARIADB		:=	mariadb
 WORDPRESS	:=	wordpress
-#
+NGINX		:=	nginx
 # ------------------ #
 # Directories:
 #DATA_DIR	:=	/home/$(USER)/data/volumes/mariadb_data
@@ -67,10 +67,12 @@ help:
 build:
 	@$(COMPOSE) build $(MARIADB)
 	@$(COMPOSE) build $(WORDPRESS)
+	@$(COMPOSE) build $(NGINX)
 
 up:
 	@$(COMPOSE) up -d $(MARIADB)
 	@$(COMPOSE) up -d $(WORDPRESS)
+	@$(COMPOSE) up -d $(NGINX)
 
 down:
 	@$(COMPOSE) down $(COMPOSE_DOWN_FLAGS)
@@ -81,6 +83,7 @@ re: down build up
 logs:
 	@(COMPOSE) logs -f $(MARIADB)
 	@(COMPOSE) logs -f $(WORDPRESS)
+	@(COMPOSE) logs -f $(NGINX)
 
 ps:
 	@$(COMPOSE) ps

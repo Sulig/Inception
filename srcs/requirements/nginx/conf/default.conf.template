@@ -1,0 +1,13 @@
+server {
+    listen 443 ssl;
+    server_name ${DOMAIN_NAME};
+
+    ssl_certificate     /etc/nginx/certs/localhost.crt;
+    ssl_certificate_key /etc/nginx/certs/localhost.key;
+
+    location / {
+        proxy_pass http://wordpress:9000;
+        include proxy_params;
+    }
+}
+

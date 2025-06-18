@@ -32,8 +32,8 @@ COMPOSE			=	docker-compose -f srcs/docker-compose.yml
 COMPOSE_DOWN_FLAGS	=	--volumes --remove-orphans
 # ------------------ #
 # Services:
-MARIADB	:= mariadb
-#
+MARIADB		:=	mariadb
+WORDPRESS	:=	wordpress
 #
 # ------------------ #
 # Directories:
@@ -66,9 +66,11 @@ help:
 # Building Comands:
 build:
 	@$(COMPOSE) build $(MARIADB)
+	@$(COMPOSE) build $(WORDPRESS)
 
 up:
 	@$(COMPOSE) up -d $(MARIADB)
+	@$(COMPOSE) up -d $(WORDPRESS)
 
 down:
 	@$(COMPOSE) down $(COMPOSE_DOWN_FLAGS)
@@ -78,6 +80,7 @@ re: down build up
 # Other Comands:
 logs:
 	@(COMPOSE) logs -f $(MARIADB)
+	@(COMPOSE) logs -f $(WORDPRESS)
 
 ps:
 	@$(COMPOSE) ps

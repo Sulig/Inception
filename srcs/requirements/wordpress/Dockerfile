@@ -1,14 +1,11 @@
 #PHP version
-FROM php:8.0-fm
+FROM php:8.0-fpm
 
 ###
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	mariadb-client unzip \
 	&& docker-php-ext-install mysqli pdo pdo_mysql \
 	&& apt-get clean && rm -rf /var/lib/apt/lists/*
-
-##
-COPY conf/php.ini /usr/local/etc/php/php.ini
 
 ##
 WORKDIR /var/www/html

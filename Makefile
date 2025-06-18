@@ -31,11 +31,6 @@ RG	:=	\033[1;32m
 COMPOSE			=	docker-compose -f srcs/docker-compose.yml
 COMPOSE_DOWN_FLAGS	=	--volumes --remove-orphans
 # ------------------ #
-# Services:
-MARIADB		:=	mariadb
-WORDPRESS	:=	wordpress
-NGINX		:=	nginx
-# ------------------ #
 # Directories:
 #DATA_DIR	:=	/home/$(USER)/data/volumes/mariadb_data
 
@@ -65,14 +60,10 @@ help:
 # ******************************************************************************* #
 # Building Comands:
 build:
-	@$(COMPOSE) build $(MARIADB)
-	@$(COMPOSE) build $(WORDPRESS)
-	@$(COMPOSE) build $(NGINX)
+	@$(COMPOSE) build
 
 up:
-	@$(COMPOSE) up -d $(MARIADB)
-	@$(COMPOSE) up -d $(WORDPRESS)
-	@$(COMPOSE) up -d $(NGINX)
+	@$(COMPOSE) up -d
 
 down:
 	@$(COMPOSE) down $(COMPOSE_DOWN_FLAGS)
@@ -80,11 +71,6 @@ down:
 re: down build up
 #--------------------
 # Other Comands:
-logs:
-	@(COMPOSE) logs -f $(MARIADB)
-	@(COMPOSE) logs -f $(WORDPRESS)
-	@(COMPOSE) logs -f $(NGINX)
-
 ps:
 	@$(COMPOSE) ps
 # ********************************************************************************* #
@@ -98,5 +84,5 @@ clear: clean
 	@clear
 # -------------------- #
 .PHONY: all author help clean clear re
-.PHONY: build up down create-dirs logs ps
+.PHONY: build up down ps
 # ********************************************************************************** #

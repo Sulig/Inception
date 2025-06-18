@@ -1,56 +1,26 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
-# Si ya existe wp-config.php, salimos
-if [ -f wp-config.php ]; then
-  exec "$@"
-  exit 0
+# Copiar WordPress si está vacío
+if [ ! -f /var/www/html/wp-config.php ]; then
+    cp -a /usr/src/wordpress/. /var/www/html/
 fi
 
-# Variables de entorno
-: "${WORDPRESS_DB_HOST:?env var missing}"
-: "${WORDPRESS_DB_NAME:?env var missing}"
-: "${WORDPRESS_DB_USER:?env var missing}"
-# password viene de secreto montado
-DB_PW=$(cat /run/secrets/db_password)
+# Configurar wp-config.php
+if [ ! -f /var/www/html/wp-config.php ]; then
+    wp config create \
+        --dbhost="$WORDPRESS_DB_HOST" \
+        --dbname="$WORDPRESS_DB_NAME" \
+        --dbuser="$WORDPRESS_DB_USER" \
+        --dbpass="$(cat $WORDPRESS_DB_PASSWORD_FILE)" \
+        --locale=es_ES \
+        --skip-check \
+        --allow-root
+fi
 
-# Descargamos WordPress
-curl -o latest.tar.gz https://wordpress.org/latest.tar.gz
-tar zxvf latest.tar.gz --strip-components=1
-rm latest.tar.gz
+# Configurar permisos
+chown -R www-data:www-data /var/www/html
+find /var/www/html -type d -exec chmod 755 {} \;
+find /var/www/html -type f -exec chmod 644 {} \;
 
-# Generamos wp-config.php con sustitución de variables
-cat > wp-config.php <<-EOF
-<?php
-define('DB_NAME', '${WORDPRESS_DB_NAME}');
-define('DB_USER', '${WORDPRESS_DB_USER}');
-define('DB_PASSWORD', '${DB_PW}');
-define('DB_HOST', '${WORDPRESS_DB_HOST}');
-define('DB_CHARSET', 'utf8mb4');
-define('DB_COLLATE', '');
-
-\$table_prefix = 'wp_';
-
-define('AUTH_KEY',         'put your unique phrase here');
-define('SECURE_AUTH_KEY',  'put your unique phrase here');
-define('LOGGED_IN_KEY',    'put your unique phrase here');
-define('NONCE_KEY',        'put your unique phrase here');
-define('AUTH_SALT',        'put your unique phrase here');
-define('SECURE_AUTH_SALT', 'put your unique phrase here');
-define('LOGGED_IN_SALT',   'put your unique phrase here');
-define('NONCE_SALT',       'put your unique phrase here');
-
-if ( ! defined('ABSPATH') ) {
-    define('ABSPATH', __DIR__ . '/');
-}
-
-require_once ABSPATH . 'wp-settings.php';
-EOF
-
-# Ajustar permisos
-chown -R www-data:www-data .
-chmod 640 wp-config.php
-
-# Finalmente, arrancar php-fpm
 exec "$@"
-

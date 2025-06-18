@@ -1,26 +1,29 @@
-#PHP version
-FROM php:8.0-fpm
+FROM php:8.2-fpm-alpine
 
-###
-RUN apt-get update && apt-get install -y --no-install-recommends \
-	mariadb-client unzip \
-	&& docker-php-ext-install mysqli pdo pdo_mysql \
-	&& apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apk update && apk add --no-cache \
+    curl \
+    mariadb-client \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    libzip-dev \
+    shadow
 
-##
-WORKDIR /var/www/html
-RUN chown -R www-data:www-data /var/www/html
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) gd mysqli pdo pdo_mysql zip
 
-##
-COPY tools/configure.sh /usr/local/bin/configure.sh
+RUN curl -o wordpress.tar.gz -fSL "https://wordpress.org/latest.tar.gz" \
+    && tar -xzf wordpress.tar.gz -C /usr/src/ \
+    && rm wordpress.tar.gz
+
+COPY tools/configure.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/configure.sh
 
-# Data Base
-VOLUME [ "/var/www/html" ]
+# Configurar usuario y permisos
+RUN usermod -u 1000 www-data && groupmod -g 1000 www-data
+RUN chown -R www-data:www-data /var/www/html
 
-# Port
-EXPOSE 9000
+WORKDIR /var/www/html
 
-#Ejecute script (configure wordpress) and start php
 ENTRYPOINT ["configure.sh"]
-CMD ["php-fpm"]
+CMD ["php-fpm", "-F"]

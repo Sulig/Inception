@@ -80,9 +80,13 @@ clean:
 	@$(COMPOSE) down -v --remove-orphans
 	@echo "$(B)\n All cleaned succesfully$(DEF)\n"
 
-clear: clean
+fclean: clean
+	@docker system prune -af
+	@echo "$(B)\n Deep clean doned!"
+
+clear: fclean
 	@clear
 # -------------------- #
-.PHONY: all author help clean clear re
+.PHONY: all author help clean clear fclean re
 .PHONY: build up down ps
 # ********************************************************************************** #

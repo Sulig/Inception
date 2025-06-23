@@ -1,29 +1,21 @@
-FROM php:8.2-fpm-alpine
+FROM php:8.0-fpm
 
-RUN apk update && apk add --no-cache \
-    curl \
-    mariadb-client \
-    libpng-dev \
-    libjpeg-turbo-dev \
-    freetype-dev \
-    libzip-dev \
-    shadow
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      mariadb-client \
+      curl \
+      less \
+    && curl -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
+    && chmod +x /usr/local/bin/wp \
+    && docker-php-ext-install mysqli pdo pdo_mysql \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd mysqli pdo pdo_mysql zip
-
-RUN curl -o wordpress.tar.gz -fSL "https://wordpress.org/latest.tar.gz" \
-    && tar -xzf wordpress.tar.gz -C /usr/src/ \
-    && rm wordpress.tar.gz
-
-COPY tools/configure.sh /usr/local/bin/
+# Copiamos el script de configuración
+COPY tools/configure.sh /usr/local/bin/configure.sh
 RUN chmod +x /usr/local/bin/configure.sh
 
-# Configurar usuario y permisos
-RUN usermod -u 1000 www-data && groupmod -g 1000 www-data
-RUN chown -R www-data:www-data /var/www/html
-
 WORKDIR /var/www/html
+VOLUME [ "/var/www/html" ]
+EXPOSE 9000
 
-ENTRYPOINT ["configure.sh"]
-CMD ["php-fpm", "-F"]
+ENTRYPOINT ["/usr/local/bin/configure.sh"]
+CMD ["php-fpm"]

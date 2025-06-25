@@ -1,16 +1,16 @@
 #!/bin/sh
 set -e
 
-# 1) Si no existe /var/www/html/wp-load.php, descargar WordPress con WP-CLI
+# 1) Descargar y extraer WordPress si no está instalado
 if [ ! -f /var/www/html/wp-load.php ]; then
   echo "Descargando WordPress..."
-  wp core download \
-    --path=/var/www/html \
-    --locale=es_ES \
-    --allow-root
+  curl -o latest.tar.gz https://wordpress.org/latest.tar.gz
+  mkdir -p /var/www/html
+  tar zxvf latest.tar.gz -C /var/www/html --strip-components=1
+  rm latest.tar.gz
 fi
 
-# 2) Crear wp-config.php si no existe
+# 2) Generar wp-config.php si no existe
 if [ ! -f /var/www/html/wp-config.php ]; then
   echo "Generando wp-config.php..."
   wp config create \
@@ -31,3 +31,4 @@ find /var/www/html -type f -exec chmod 644 {} \;
 
 # 4) Arrancar PHP-FPM
 exec php-fpm
+

@@ -1,6 +1,7 @@
 FROM php:8.0-fpm
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
       mariadb-client \
       curl \
       less \
@@ -9,7 +10,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && docker-php-ext-install mysqli pdo pdo_mysql \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copiamos el script de configuración
 COPY tools/configure.sh /usr/local/bin/configure.sh
 RUN chmod +x /usr/local/bin/configure.sh
 
@@ -19,3 +19,4 @@ EXPOSE 9000
 
 ENTRYPOINT ["/usr/local/bin/configure.sh"]
 CMD ["php-fpm"]
+

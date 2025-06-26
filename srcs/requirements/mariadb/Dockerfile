@@ -11,7 +11,7 @@ RUN apt update && apt upgrade -y \
 	&& rm -rf /var/lib/apt/lists/*
 
 #Copy configuration
-COPY conf/mariadb.conf /etc/mysql/my.cnf
+#COPY conf/mariadb.conf /etc/mysql/my.cnf
 
 # Give all permisions to continue
 RUN mkdir -p /var/run/mysqld \
@@ -19,8 +19,8 @@ RUN mkdir -p /var/run/mysqld \
 	&& chmod 777 /var/run/mysqld
 
 #Copy start scripts
-COPY tools/configure.sh /tmp/configure.sh
-RUN chmod +x /tmp/configure.sh
+#COPY tools/configure.sh /tmp/configure.sh
+#RUN chmod +x /tmp/configure.sh
 
 VOLUME /var/lib/mysql
 
@@ -28,4 +28,4 @@ VOLUME /var/lib/mysql
 EXPOSE 3306
 
 #Execute
-ENTRYPOINT ["/tmp/configure.sh"]
+#ENTRYPOINT ["/tmp/configure.sh"]

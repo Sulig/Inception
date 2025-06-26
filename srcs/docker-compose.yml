@@ -3,10 +3,7 @@ version: "3.8"
 services:
 
   mariadb:
-    build:
-      context: ./requirements/mariadb
-      dockerfile: Dockerfile
-    image: mariadb
+    image: mariadb:10.6
     restart: always
     networks:
       - backend_net
@@ -16,16 +13,13 @@ services:
       - db_root_password
       - db_password
     environment:
-      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD_FILE: /run/secrets/db_password
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
   
   wordpress:
-    build:
-      context: ./requirements/wordpress
-      dockerfile: Dockerfile
-    image: wordpress-custom
+    image: wordpress:6.4-fpm
     depends_on:
       - mariadb
     networks:
@@ -36,9 +30,10 @@ services:
       - db_password
     environment:
       WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
+      WORDPRESS_DB_PORT: ${WORDPRESS_DB_PORT}
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
       WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
-      WORDPRESS_DB_PASSWORD_FILE: /run/secrets/db_password
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
   
   nginx:
     build:

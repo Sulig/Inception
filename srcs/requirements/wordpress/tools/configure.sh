@@ -10,15 +10,14 @@ if [ ! -f /var/www/html/wp-load.php ]; then
   rm latest.tar.gz
 fi
 
-# 2) Generar wp-config.php si no existe
 if [ ! -f /var/www/html/wp-config.php ]; then
-  echo "Generando wp-config.php..."
   wp config create \
     --path=/var/www/html \
     --dbhost="$WORDPRESS_DB_HOST" \
+    --dbport="$WORDPRESS_DB_PORT" \
     --dbname="$WORDPRESS_DB_NAME" \
     --dbuser="$WORDPRESS_DB_USER" \
-    --dbpass="$(cat $WORDPRESS_DB_PASSWORD_FILE)" \
+    --dbpass="$WORDPRESS_DB_PASSWORD" \
     --locale=es_ES \
     --skip-check \
     --allow-root

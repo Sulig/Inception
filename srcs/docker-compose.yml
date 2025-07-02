@@ -3,7 +3,10 @@ version: "3.8"
 services:
 
   mariadb:
-    image: mariadb:10.6
+    build:
+      context: ./requirements/mariadb
+      dockerfile: Dockerfile
+    image: mariadb-ctn
     restart: always
     networks:
       - backend_net
@@ -19,7 +22,10 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
   
   wordpress:
-    image: wordpress:6.4-fpm
+    build:
+      context: ./requirements/wordpress
+      dockerfile: Dockerfile
+    image: wordpress-ctn #This can be a custom name?
     depends_on:
       - mariadb
     networks:
@@ -39,7 +45,7 @@ services:
     build:
       context: ./requirements/nginx
       dockerfile: Dockerfile
-    image: nginx
+    image: nginx-ctn
     depends_on:
       - wordpress
     ports:

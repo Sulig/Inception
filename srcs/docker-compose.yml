@@ -6,7 +6,7 @@ services:
     build:
       context: ./requirements/mariadb
       dockerfile: Dockerfile
-    image: mariadb-ctn
+    image: mariadb
     restart: always
     networks:
       - backend_net
@@ -25,7 +25,7 @@ services:
     build:
       context: ./requirements/wordpress
       dockerfile: Dockerfile
-    image: wordpress-ctn #This can be a custom name?
+    image: wordpress
     depends_on:
       - mariadb
     networks:
@@ -45,7 +45,7 @@ services:
     build:
       context: ./requirements/nginx
       dockerfile: Dockerfile
-    image: nginx-ctn
+    image: nginx
     depends_on:
       - wordpress
     ports:

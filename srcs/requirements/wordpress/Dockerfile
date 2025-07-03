@@ -8,6 +8,7 @@ RUN chmod +x /tini
 # Install dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+    ca-certificates \  # <--- ADD THIS LINE
     php php-fpm php-mysql php-curl php-dom \
     php-mbstring php-gd php-xml curl && \
     curl -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && \

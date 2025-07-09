@@ -10,8 +10,13 @@ RUN apt-get update && \
     chmod +x /usr/local/bin/wp && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Crea el symlink para php-fpm
-RUN ln -s /usr/sbin/php-fpm7.4 /usr/local/bin/php-fpm
+# Create required directories
+RUN mkdir -p /run/php && \
+    mkdir -p /var/run/php && \
+    chown -R www-data:www-data /run/php /var/run/php
+
+# Update PHP-FPM config to use TCP port instead of socket
+RUN sed -i "s/^listen = .*/listen = 0.0.0.0:9000/" /etc/php/*/fpm/pool.d/www.conf
 
 # Copy configuration tools
 COPY tools/ /usr/local/bin/

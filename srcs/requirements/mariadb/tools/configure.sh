@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -e
 
 # Configurar directorio de datos
@@ -8,11 +7,13 @@ mkdir -p ${DATA_DIR}
 chown -R mysql:mysql ${DATA_DIR}
 chmod 755 ${DATA_DIR}
 
-# Leer secrets desde archivos
+# Leer secrets
 MYSQL_ROOT_PASSWORD=$(cat ${MYSQL_ROOT_PASSWORD_FILE})
 MYSQL_PASSWORD=$(cat ${MYSQL_PASSWORD_FILE})
+MYSQL_GOD_PASSWORD=$(cat ${MYSQL_GOD_PASSWORD_FILE})  # Nuevo secret para admin
 MYSQL_DATABASE=${MYSQL_DATABASE}
 MYSQL_USER=${MYSQL_USER}
+MYSQL_GOD_USER=${MYSQL_GOD_USER}  # Nuevo usuario admin
 
 # Inicializar DB si es necesario
 if [ ! -d "/var/lib/mysql/mysql" ]; then
@@ -32,13 +33,20 @@ while ! mysqladmin ping --silent; do
     sleep 1
 done
 
-# Configurar root y usuario
+# Configurar root y usuarios
 echo "Configuring users and database..."
 mysql <<EOF
 ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
 CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE};
+
+-- Crear usuario normal
 CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
 GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO '${MYSQL_USER}'@'%';
+
+-- Crear usuario administrador
+CREATE USER IF NOT EXISTS '${MYSQL_GOD_USER}'@'%' IDENTIFIED BY '${MYSQL_GOD_PASSWORD}';
+GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO '${MYSQL_GOD_USER}'@'%' WITH GRANT OPTION;
+
 FLUSH PRIVILEGES;
 EOF
 

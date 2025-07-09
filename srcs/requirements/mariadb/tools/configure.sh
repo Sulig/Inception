@@ -10,10 +10,10 @@ chmod 755 ${DATA_DIR}
 # Leer secrets
 MYSQL_ROOT_PASSWORD=$(cat ${MYSQL_ROOT_PASSWORD_FILE})
 MYSQL_PASSWORD=$(cat ${MYSQL_PASSWORD_FILE})
-MYSQL_GOD_PASSWORD=$(cat ${MYSQL_GOD_PASSWORD_FILE})  # Nuevo secret para admin
+MYSQL_GOD_PASSWORD=$(cat ${MYSQL_GOD_PASSWORD_FILE})
 MYSQL_DATABASE=${MYSQL_DATABASE}
 MYSQL_USER=${MYSQL_USER}
-MYSQL_GOD_USER=${MYSQL_GOD_USER}  # Nuevo usuario admin
+MYSQL_GOD_USER=${MYSQL_GOD_USER}
 
 # Inicializar DB si es necesario
 if [ ! -d "/var/lib/mysql/mysql" ]; then

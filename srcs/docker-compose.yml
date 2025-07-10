@@ -12,9 +12,6 @@ services:
       - backend_net
     volumes:
       - mariadb_data:/var/lib/mysql
-    secrets:
-      - db_root_password
-      - db_password
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -32,8 +29,6 @@ services:
       - backend_net
     volumes:
       - wordpress_data:/var/www/html
-    secrets:
-      - db_password
     environment:
       WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
       WORDPRESS_DB_PORT: ${WORDPRESS_DB_PORT}
@@ -63,13 +58,5 @@ networks:
 volumes:
   mariadb_data: {}
   wordpress_data: {}
-
-# Using the passwords saved in /secrets...
-#  Note todo later: Maybe i can save that secrets on my github using the secrets label?
-secrets:
-  db_root_password:
-    file: ../secrets/db_root_password.txt
-  db_password:
-    file: ../secrets/db_password.txt
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\

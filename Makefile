@@ -6,10 +6,10 @@
 #    By: sadoming <sadoming@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/10/14 17:25:36 by sadoming          #+#    #+#              #
-#    Updated: 2025/05/12 19:56:21 by sadoming         ###   ########.fr        #
+#    Updated: 2025/10/15 14:03:14 by sadoming         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
-# Change these based on your conf 
+
 
 USER	:=	sadoming
 
@@ -36,7 +36,7 @@ COMPOSE_DOWN_FLAGS	=	--volumes --remove-orphans
 
 # ******************************************************************************* #
 #-------------------------------------------------------------#
-all: build up
+all: setup build up
 	@echo "$(RG)\n~ **************************************** ~"
 	@echo " ~\t\t All Ready!\t\t ~"
 	@echo "~ **************************************** ~$(DEF)\n"
@@ -52,12 +52,25 @@ help:
 	@echo "\033[1;37m\n ~ Posible comands:\n"
 	@echo "\t~ \t\t\t #-> Buid all the services\n"
 	@echo "\t~ all  \t\t #-> Build all the services\n"
+	@echo "\t~ build \t #-> Build all the services\n"
+	@echo "\t~ up     \t\t #-> Activate all the services\n"
+	@echo "\t~ down \t #-> Stop all the services\n"
+	@echo "\t~ ps     \t\t #-> List all the services\n"
 	@echo "\t~ clean \t #-> Clean all\n"
 	@echo "\t~ clear \t #-> Clean all & clear\n"
 	@echo "\t~ re   \t\t #-> Reboot all containers\n"
 	@make -s author
 #-------------------------------------------------------------#
 # ******************************************************************************* #
+setup:
+	@mkdir -p /home/$(USER)/data/mariadb
+	@mkdir -p /home/$(USER)/data/mariadb/init
+	@mkdir -p /home/$(USER)/data/wordpress
+	@mkdir -p /home/$(USER)/data/php-uploads
+	@mkdir -p /home/$(USER)/data/nginx/certs
+	@mkdir -p /home/$(USER)/data/nginx/conf
+	@echo "Host data directories created under /home/$(USER)/data/"
+
 # Building Comands:
 build:
 	@$(COMPOSE) build

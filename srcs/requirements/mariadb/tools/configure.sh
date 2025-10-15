@@ -13,13 +13,14 @@ set -eu
 DATADIR=/var/lib/mysql
 SOCKET="/var/run/mysqld/mysqld.sock"
 
+# Asegurar permisos
 chown -R mysql:mysql "$DATADIR"
+chown -R mysql:mysql /var/run/mysqld
 
 # Initialize DB if needed
 if [ ! -d "$DATADIR/mysql" ]; then
   echo "=> Inicializando datos de MariaDB..."
 
-  # Usar método de inicialización que asegura root sin contraseña
   if command -v mariadb-install-db >/dev/null 2>&1; then
     mariadb-install-db --user=mysql --datadir="$DATADIR" --auth-root-authentication-method=normal
   elif command -v mysql_install_db >/dev/null 2>&1; then
@@ -27,10 +28,11 @@ if [ ! -d "$DATADIR/mysql" ]; then
   else
     mysqld --initialize-insecure --user=mysql --datadir="$DATADIR"
   fi
+  echo "=> Inicialización completada"
 fi
 
-# Start temporary server without networking restrictions
-echo "=> Arrancando servidor temporal..."
+# Start temporary server with socket only
+echo "=> Arrancando servidor temporal (socket only)..."
 mysqld_safe --datadir="$DATADIR" --skip-networking --socket="$SOCKET" &
 pid="$!"
 
@@ -46,23 +48,23 @@ while [ ! -S "$SOCKET" ]; do
     exit 1
   fi
 done
+echo "=> Socket disponible"
 
-# Now configure using socket connection (no password needed for initial setup)
+# Configure using socket connection (no password needed)
 echo "=> Configurando root y base de datos..."
 mysql -S "$SOCKET" <<-EOSQL
--- Asegurar que root puede conectarse y tiene todos los privilegios
 ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
 DELETE FROM mysql.user WHERE User='';
 DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
 DROP DATABASE IF EXISTS test;
 DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
-
--- Crear base de datos y usuario para WordPress
 CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
 CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
 GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
 FLUSH PRIVILEGES;
 EOSQL
+
+echo "=> Configuración completada"
 
 # Stop temporary server
 echo "=> Deteniendo servidor temporal..."

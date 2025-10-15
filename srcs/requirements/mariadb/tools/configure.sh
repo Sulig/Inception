@@ -1,51 +1,69 @@
 #!/bin/bash
-set -eux
+set -eu
 
-# Variables de entorno obligatorias:
-#   MYSQL_ROOT_PASSWORD, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD
+[ "${DEBUG:-}" = "1" ] && set -x
 
-# 1) Preparar directorio de datos
+: "${MYSQL_ROOT_PASSWORD:?Need MYSQL_ROOT_PASSWORD non-empty}"
+: "${MYSQL_DATABASE:?Need MYSQL_DATABASE non-empty}"
+: "${MYSQL_USER:?Need MYSQL_USER non-empty}"
+: "${MYSQL_PASSWORD:?Need MYSQL_PASSWORD non-empty}"
+
 DATADIR=/var/lib/mysql
-chown -R mysql:mysql "$DATADIR"
+SOCKET="/var/run/mysqld/mysqld.sock"
 
-# 2) Inicializar datos si hace falta
+# Ensure permissions
+chown -R mysql:mysql "$DATADIR"
+chown -R mysql:mysql /var/run/mysqld
+
+# Initialize DB if needed
 if [ ! -d "$DATADIR/mysql" ]; then
-  echo "=> Inicializando datos de MariaDB..."
+  echo "=> Initializing MariaDB data directory..."
   mysql_install_db --user=mysql --datadir="$DATADIR"
+  echo "=> Initialization completed"
 fi
 
-# 3) Arrancar servidor temporal en background (con TCP, sin --skip-networking)
-echo "=> Arrancando servidor temporal..."
-mysqld_safe --datadir="$DATADIR" &
+# Start temporary server
+echo "=> Starting temporary server (socket only)..."
+mysqld --user=mysql --datadir="$DATADIR" --skip-networking --socket="$SOCKET" &
 pid="$!"
 
-# 4) Esperar hasta que acepte conexiones
-echo "=> Esperando a que MariaDB esté lista..."
+# Wait for server to be ready
+echo "=> Waiting for MariaDB to be ready..."
 timeout=30
-while ! mysqladmin ping --silent --protocol=TCP; do
+while true; do
+  if [ -S "$SOCKET" ] && mysql -S "$SOCKET" -u root -e "SELECT 1" >/dev/null 2>&1; then
+    echo "=> MariaDB is ready"
+    break
+  fi
   sleep 1
   timeout=$((timeout - 1))
   if [ $timeout -le 0 ]; then
-    echo "¡¡No arranca MariaDB temporal!!"
+    echo "!! MariaDB not ready for connections !!"
     exit 1
   fi
 done
 
-# 5) Configurar contraseñas y usuarios
-echo "=> Configurando root y base de datos..."
-mysql <<-EOSQL
-  ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
+# Configure database and users
+echo "=> Configuring root and database..."
+mysql -S "$SOCKET" -u root <<-EOSQL
+  UPDATE mysql.user SET Password=PASSWORD('${MYSQL_ROOT_PASSWORD}') WHERE User='root';
+  DELETE FROM mysql.user WHERE User='';
+  DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+  DROP DATABASE IF EXISTS test;
+  DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
   CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
   CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
   GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
   FLUSH PRIVILEGES;
 EOSQL
 
-# 6) Parar servidor temporal
-echo "=> Deteniendo servidor temporal..."
-kill "$pid"
-wait "$pid"
+echo "=> Configuration completed"
 
-# 7) Finalmente, arranca el demonio definitivo (reemplaza el proceso actual)
-echo "=> Arrancando servidor final de MariaDB..."
+# Stop temporary server
+echo "=> Stopping temporary server..."
+kill "$pid"
+wait "$pid" 2>/dev/null || true
+
+# Start final server
+echo "=> Starting final MariaDB server..."
 exec "$@"

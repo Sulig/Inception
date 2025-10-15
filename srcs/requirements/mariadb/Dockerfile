@@ -14,8 +14,7 @@ RUN chmod +x /usr/local/bin/configure.sh
 RUN mkdir -p /var/run/mysqld /var/lib/mysql && \
     chown -R mysql:mysql /var/run/mysqld /var/lib/mysql
 
-# Volume is already declared on docker-compose file.
-#VOLUME /var/lib/mysql
+VOLUME /var/lib/mysql
 
 #MariaDB Port
 EXPOSE 3306

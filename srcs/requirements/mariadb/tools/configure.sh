@@ -1,10 +1,10 @@
 #!/bin/bash
 set -eu
 
-# Verbose only if DEBUG set
+# DEBUG=1 para trazas: export DEBUG=1
 [ "${DEBUG:-}" = "1" ] && set -x
 
-# Required env vars
+# Comprobar variables obligatorias
 : "${MYSQL_ROOT_PASSWORD:?Need MYSQL_ROOT_PASSWORD non-empty}"
 : "${MYSQL_DATABASE:?Need MYSQL_DATABASE non-empty}"
 : "${MYSQL_USER:?Need MYSQL_USER non-empty}"
@@ -13,10 +13,9 @@ set -eu
 DATADIR=/var/lib/mysql
 chown -R mysql:mysql "$DATADIR"
 
-# Initialize DB if needed
+# Inicializar si hace falta
 if [ ! -d "$DATADIR/mysql" ]; then
   echo "=> Inicializando datos de MariaDB..."
-  # mysql_install_db suele existir en mariadb-server; en algunas distros usar mariadb-install-db o mysqld --initialize
   if command -v mysql_install_db >/dev/null 2>&1; then
     mysql_install_db --user=mysql --datadir="$DATADIR"
   else
@@ -25,26 +24,25 @@ if [ ! -d "$DATADIR/mysql" ]; then
   fi
 fi
 
-# Start temporary server
+# Arrancar servidor temporal en background (usa socket por defecto)
 echo "=> Arrancando servidor temporal..."
 mysqld_safe --datadir="$DATADIR" &
 pid="$!"
 
-# Wait for server to be reachable over TCP
+# Esperar a que el socket esté disponible (usa socket UNIX por defecto)
 echo "=> Esperando a que MariaDB acepte conexiones (timeout 60s)..."
 timeout=60
-until mysqladmin ping --silent --protocol=TCP; do
+while ! mysqladmin ping --silent; do
   sleep 1
   timeout=$((timeout - 1))
   if [ $timeout -le 0 ]; then
     echo "¡¡No arranca MariaDB temporal!!"
-    # print logs for debugging
     tail -n 200 /var/log/mysql/error.log || true
     exit 1
   fi
 done
 
-# Configure root, database and user (idempotent)
+# Ejecutar SQL de configuración (conexión por socket, idempotente)
 echo "=> Configurando root y base de datos..."
 mysql <<-EOSQL
 ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
@@ -54,16 +52,16 @@ GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
 FLUSH PRIVILEGES;
 EOSQL
 
-# Stop temporary server cleanly
+# Apagar servidor temporal de forma ordenada usando mysqladmin (socket)
 echo "=> Deteniendo servidor temporal..."
 if command -v mysqladmin >/dev/null 2>&1; then
-  mysqladmin --protocol=TCP shutdown || kill "$pid"
+  mysqladmin shutdown || kill "$pid"
 else
   kill "$pid"
 fi
 
 wait "$pid" 2>/dev/null || true
 
-# Replace process with final server; respect CMD by exec "$@"
+# Ejecutar el proceso final (respetar CMD)
 echo "=> Arrancando servidor final de MariaDB (exec)..."
 exec "$@"

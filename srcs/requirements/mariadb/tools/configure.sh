@@ -36,19 +36,30 @@ echo "=> Arrancando servidor temporal (socket only)..."
 mysqld_safe --datadir="$DATADIR" --skip-networking --socket="$SOCKET" &
 pid="$!"
 
-# Wait for socket to be available
-echo "=> Esperando a que el socket de MariaDB esté listo..."
-timeout=30
-while [ ! -S "$SOCKET" ]; do
+# Wait for socket to be available AND server ready to accept connections
+echo "=> Esperando a que MariaDB esté completamente lista..."
+timeout=60
+while true; do
+  # Check if socket exists AND we can connect to it
+  if [ -S "$SOCKET" ] && mysql -S "$SOCKET" -e "SELECT 1" >/dev/null 2>&1; then
+    echo "=> MariaDB lista y aceptando conexiones"
+    break
+  fi
+
   sleep 1
   timeout=$((timeout - 1))
   if [ $timeout -le 0 ]; then
-    echo "¡¡Socket no creado!!"
-    tail -n 200 /var/log/mysql/error.log || true
+    echo "¡¡MariaDB no está listo para conexiones!!"
+    echo "=== Últimos logs de error ==="
+    tail -n 100 /var/log/mysql/error.log 2>/dev/null || echo "No se pudo leer el log de errores"
+    echo "=== Estado del proceso ==="
+    ps aux | grep mysql || echo "No hay procesos mysql"
+    echo "=== Socket info ==="
+    ls -la /var/run/mysqld/ 2>/dev/null || echo "No se pudo listar socket directory"
     exit 1
   fi
+  echo "    Esperando... ($timeout segundos restantes)"
 done
-echo "=> Socket disponible"
 
 # Configure using socket connection (no password needed)
 echo "=> Configurando root y base de datos..."
@@ -68,8 +79,11 @@ echo "=> Configuración completada"
 
 # Stop temporary server
 echo "=> Deteniendo servidor temporal..."
-kill "$pid"
-wait "$pid" 2>/dev/null || true
+if kill "$pid" 2>/dev/null; then
+  wait "$pid" 2>/dev/null || true
+else
+  echo "Proceso ya terminado"
+fi
 
 # Start final server
 echo "=> Arrancando servidor final de MariaDB..."

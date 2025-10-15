@@ -1,67 +1,74 @@
 #!/bin/bash
 set -eu
 
-# DEBUG=1 para trazas: export DEBUG=1
+# Verbose only if DEBUG set
 [ "${DEBUG:-}" = "1" ] && set -x
 
-# Comprobar variables obligatorias
+# Required env vars
 : "${MYSQL_ROOT_PASSWORD:?Need MYSQL_ROOT_PASSWORD non-empty}"
 : "${MYSQL_DATABASE:?Need MYSQL_DATABASE non-empty}"
 : "${MYSQL_USER:?Need MYSQL_USER non-empty}"
 : "${MYSQL_PASSWORD:?Need MYSQL_PASSWORD non-empty}"
 
 DATADIR=/var/lib/mysql
+SOCKET="/var/run/mysqld/mysqld.sock"
+
 chown -R mysql:mysql "$DATADIR"
 
-# Inicializar si hace falta
+# Initialize DB if needed
 if [ ! -d "$DATADIR/mysql" ]; then
   echo "=> Inicializando datos de MariaDB..."
-  if command -v mysql_install_db >/dev/null 2>&1; then
+
+  # Usar método de inicialización que asegura root sin contraseña
+  if command -v mariadb-install-db >/dev/null 2>&1; then
+    mariadb-install-db --user=mysql --datadir="$DATADIR" --auth-root-authentication-method=normal
+  elif command -v mysql_install_db >/dev/null 2>&1; then
     mysql_install_db --user=mysql --datadir="$DATADIR"
   else
-    echo "!! mysql_install_db no encontrado, intentando alternativa mysqld --initialize-insecure"
     mysqld --initialize-insecure --user=mysql --datadir="$DATADIR"
   fi
 fi
 
-# Arrancar servidor temporal en background (usa socket por defecto)
+# Start temporary server without networking restrictions
 echo "=> Arrancando servidor temporal..."
-mysqld_safe --datadir="$DATADIR" &
+mysqld_safe --datadir="$DATADIR" --skip-networking --socket="$SOCKET" &
 pid="$!"
 
-# Esperar a que el socket esté disponible (usa socket UNIX por defecto)
-echo "=> Esperando a que MariaDB acepte conexiones (timeout 60s)..."
-timeout=60
-while ! mysqladmin ping --silent; do
+# Wait for socket to be available
+echo "=> Esperando a que el socket de MariaDB esté listo..."
+timeout=30
+while [ ! -S "$SOCKET" ]; do
   sleep 1
   timeout=$((timeout - 1))
   if [ $timeout -le 0 ]; then
-    echo "¡¡No arranca MariaDB temporal!!"
+    echo "¡¡Socket no creado!!"
     tail -n 200 /var/log/mysql/error.log || true
     exit 1
   fi
 done
 
-# Ejecutar SQL de configuración (conexión por socket, idempotente)
+# Now configure using socket connection (no password needed for initial setup)
 echo "=> Configurando root y base de datos..."
-mysql <<-EOSQL
+mysql -S "$SOCKET" <<-EOSQL
+-- Asegurar que root puede conectarse y tiene todos los privilegios
 ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
+DELETE FROM mysql.user WHERE User='';
+DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+DROP DATABASE IF EXISTS test;
+DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
+
+-- Crear base de datos y usuario para WordPress
 CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
 CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
 GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
 FLUSH PRIVILEGES;
 EOSQL
 
-# Apagar servidor temporal de forma ordenada usando mysqladmin (socket)
+# Stop temporary server
 echo "=> Deteniendo servidor temporal..."
-if command -v mysqladmin >/dev/null 2>&1; then
-  mysqladmin shutdown || kill "$pid"
-else
-  kill "$pid"
-fi
-
+kill "$pid"
 wait "$pid" 2>/dev/null || true
 
-# Ejecutar el proceso final (respetar CMD)
-echo "=> Arrancando servidor final de MariaDB (exec)..."
+# Start final server
+echo "=> Arrancando servidor final de MariaDB..."
 exec "$@"

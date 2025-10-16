@@ -6,7 +6,7 @@
 #    By: sadoming <sadoming@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/10/14 17:25:36 by sadoming          #+#    #+#              #
-#    Updated: 2025/10/16 14:02:00 by sadoming         ###   ########.fr        #
+#    Updated: 2025/10/16 13:38:45 by sadoming         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -62,6 +62,7 @@ help:
 # ******************************************************************************* #
 setup:
 	@echo "$(B)=== Configuring Inception ===$(DEF)"
+	@mkdir -p $(DATA_PATH)/mariadb
 	@mkdir -p $(DATA_PATH)/wordpress
 	@mkdir -p $(DATA_PATH)/nginx
 	@mkdir -p $(DATA_PATH)/nginx/{certs,conf}

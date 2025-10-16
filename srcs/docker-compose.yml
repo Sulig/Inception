@@ -3,6 +3,9 @@ services:
   mariadb:
     build: ./requirements/mariadb
     container_name: mariadb
+    restart: unless-stopped
+    networks:
+      - inception
     env_file:
       - .env
     environment:
@@ -12,27 +15,29 @@ services:
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     volumes:
       - mariadb_data:/var/lib/mysql
-    networks:
-      - inception
-    restart: unless-stopped
+
 
   wordpress:
-    build:
-      context: ./requirements/wordpress
-      dockerfile: Dockerfile
+    build: ./requirements/wordpress
     container_name: wordpress
     restart: unless-stopped
     depends_on:
       - mariadb
     networks:
       - inception
+    env_file:
+      - .env
+    environment:
+      - WORDPRESS_DB_HOST=mariadb
+      - WORDPRESS_DB_USER=${MYSQL_USER}
+      - WORDPRESS_DB_PASSWORD=${MYSQL_PASSWORD}
+      - WORDPRESS_DB_NAME=${MYSQL_DATABASE}
+      - WP_ADMIN_USER=${WP_ADMIN_USER}
+      - WP_ADMIN_PASSWORD=${WP_ADMIN_PASSWORD}
+      - WP_ADMIN_EMAIL=${WP_ADMIN_EMAIL}
+      - DOMAIN_NAME=${DOMAIN_NAME}
     volumes:
       - wordpress_data:/var/www/html
-    environment:
-      WORDPRESS_DB_HOST: mariadb
-      WORDPRESS_DB_USER: ${MYSQL_USER}
-      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
-      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
 
   nginx:
     build:

@@ -1,30 +1,62 @@
-FROM debian:bullseye
+# Usamos la penúltima versión estable de Alpine
+FROM alpine:3.18
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-      ca-certificates \
-      php-fpm php-mysql php-curl php-dom \
-      php-mbstring php-gd php-xml curl && \
-    curl -sS https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
-      -o /usr/local/bin/wp && \
-    chmod +x /usr/local/bin/wp && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+# Instalar PHP, FPM y extensiones necesarias para WordPress
+RUN apk update && apk add --no-cache \
+    php81 \
+    php81-fpm \
+    php81-mysqli \
+    php81-json \
+    php81-curl \
+    php81-dom \
+    php81-exif \
+    php81-fileinfo \
+    php81-mbstring \
+    php81-openssl \
+    php81-xml \
+    php81-zip \
+    php81-gd \
+    php81-intl \
+    php81-phar \
+    php81-tokenizer \
+    php81-simplexml \
+    php81-xmlreader \
+    php81-xmlwriter \
+    php81-ctype \
+    php81-session \
+    php81-iconv \
+    wget \
+    curl \
+    mariadb-client \
+    && rm -rf /var/cache/apk/*
 
-# Create required directories
-RUN mkdir -p /run/php && \
-    mkdir -p /var/run/php && \
-    chown -R www-data:www-data /run/php /var/run/php
+# Crear usuario y grupo para WordPress (no usar root por seguridad)
+RUN adduser -S -H -D -s /bin/false wordpress
 
-# Update PHP-FPM config to use TCP port instead of socket
-RUN sed -i "s/^listen = .*/listen = 0.0.0.0:9000/" /etc/php/*/fpm/pool.d/www.conf
+# Crear directorios necesarios
+RUN mkdir -p /var/www/html /run/php
+RUN chown -R wordpress:wordpress /var/www/html
 
-# Copy configuration tools
-COPY tools/ /usr/local/bin/
-RUN chmod +x /usr/local/bin/configure.sh /usr/local/bin/entrypoint.sh
+# Descargar y instalar WordPress CLI
+RUN wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
+    && chmod +x wp-cli.phar \
+    && mv wp-cli.phar /usr/local/bin/wp
 
-# Setup volumes and ports
-WORKDIR /var/www/html
-VOLUME [ "/var/www/html" ]
+# Copiar configuración de PHP-FPM
+COPY conf/www.conf /etc/php81/php-fpm.d/www.conf
+
+# Copiar script de configuración
+COPY tools/configure.sh /tmp/configure.sh
+RUN chmod +x /tmp/configure.sh
+
+# Puerto de PHP-FPM
 EXPOSE 9000
 
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+# Volumen para los archivos de WordPress
+VOLUME /var/www/html
+
+# Cambiar al usuario no-root por seguridad
+USER wordpress
+
+# Comando de inicio
+CMD ["/tmp/configure.sh"]

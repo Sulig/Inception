@@ -28,6 +28,7 @@ RUN apk update && apk add --no-cache \
     wget \
     curl \
     mariadb-client \
+    su-exec \
     && rm -rf /var/cache/apk/*
 
 # Crear directorios primero como root

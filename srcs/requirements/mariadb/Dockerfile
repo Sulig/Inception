@@ -1,25 +1,25 @@
 FROM alpine:3.18
 
-# Install MariaDB and bash (importante: Alpine no tiene bash por defecto)
 RUN apk update && \
-    apk add --no-cache mariadb mariadb-client bash && \
-    rm -rf /var/cache/apk/*
+    apk add --no-cache mariadb mariadb-client bash
 
-# Create directories first
-RUN mkdir -p /var/run/mysqld /var/lib/mysql /var/log/mysql && \
-    chown -R mysql:mysql /var/run/mysqld /var/lib/mysql /var/log/mysql
+RUN mkdir -p /var/run/mysqld /var/lib/mysql
 
-# Copy configuration
+# Debug: listar archivos en el contexto de build
+COPY . /tmp/build-context/
+RUN ls -la /tmp/build-context/
+
+# Copiar archivos específicos
 COPY conf/mariadb.conf /etc/my.cnf
 COPY tools/configure.sh /usr/local/bin/configure.sh
 
-# Verify the file was copied and set permissions
-RUN ls -la /usr/local/bin/configure.sh && \
-    chmod +x /usr/local/bin/configure.sh && \
-    ls -la /usr/local/bin/configure.sh
+RUN chmod +x /usr/local/bin/configure.sh && \
+    echo "=== File check ===" && \
+    ls -la /usr/local/bin/configure.sh && \
+    file /usr/local/bin/configure.sh
 
 VOLUME /var/lib/mysql
 EXPOSE 3306
 
-ENTRYPOINT ["/usr/local/bin/configure.sh"]
-CMD ["mysqld", "--user=mysql"]
+# Temporal: usar sleep para debugging
+CMD ["sleep", "3600"]

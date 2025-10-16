@@ -57,30 +57,15 @@ volumes:
 
   mariadb_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /home/${USER}/data/mariadb
 
   wordpress_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /home/${USER}/data/wordpress
 
   nginx_certs:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /home/${USER}/data/nginx/certs
+
   nginx_conf:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /home/${USER}/data/nginx/conf
 
 networks:
   inception:

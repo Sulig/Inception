@@ -6,16 +6,22 @@
 #    By: sadoming <sadoming@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/10/14 17:25:36 by sadoming          #+#    #+#              #
-#    Updated: 2025/10/15 14:03:14 by sadoming         ###   ########.fr        #
+#    Updated: 2025/10/16 13:03:56 by sadoming         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
+USER	=	sadoming
 
-USER	:=	sadoming
+COMPOSE			= docker-compose
+COMPOSE_FILE	= ./srcs/docker-compose.yml
+DOMAIN			= $(USER).42.fr
+DATA_PATH		= /home/$(USER)/data
 
 ####################################################################
 # ------------------ #
 # Colors
+DEF	:=	\033[0m
+
 R	:=	\033[0;31m
 G	:=	\033[0;32m
 Y	:=	\033[0;33m
@@ -23,17 +29,9 @@ B	:=	\033[0;34m
 P	:=	\033[0;35m
 C	:=	\033[0;36m
 W	:=	\033[0;37m
-DEF	:=	\033[0m
 
 RG	:=	\033[1;32m
 # ------------------ #
-# Flags:
-COMPOSE			=	docker-compose -f srcs/docker-compose.yml
-COMPOSE_DOWN_FLAGS	=	--volumes --remove-orphans
-# ------------------ #
-# Directories:
-#DATA_DIR	:=	/home/$(USER)/data/volumes/mariadb_data
-
 # ******************************************************************************* #
 #-------------------------------------------------------------#
 all: setup build up
@@ -63,43 +61,85 @@ help:
 #-------------------------------------------------------------#
 # ******************************************************************************* #
 setup:
-	@mkdir -p /home/$(USER)/data/mariadb
-	@mkdir -p /home/$(USER)/data/mariadb/init
-	@mkdir -p /home/$(USER)/data/wordpress
-	@mkdir -p /home/$(USER)/data/php-uploads
-	@mkdir -p /home/$(USER)/data/nginx/certs
-	@mkdir -p /home/$(USER)/data/nginx/conf
-	@echo "Host data directories created under /home/$(USER)/data/"
+	@echo "$(B)=== Configuring Inception ===$(DEF)"
+	@mkdir -p $(DATA_PATH)/mariadb
+	@mkdir -p $(DATA_PATH)/wordpress
+	@mkdir -p $(DATA_PATH)/nginx
+	@echo "$(G)✓ Dirs created$(DEF)"
+	@if [ ! -f ./srcs/.env ]; then \
+		echo "$(Y)⚠ Creating .env using the template$(DEF)"; \
+		cp ./srcs/.env.example ./srcs/.env 2>/dev/null || echo "$(R)✗ Template '.env.example' not found!$(DEF)"; \
+	fi
 
 # Building Comands:
 build:
-	@$(COMPOSE) build
+	@echo "$(B)=== CBuilding Docker imgs ===$(RESET)"
+	@cd srcs && $(COMPOSE) build
+	@echo "$(G)✓ Builded correctly!$(RESET)"
 
 up:
-	@$(COMPOSE) up -d
+	@echo "$(B)=== Starting services ===$(RESET)"
+	@cd srcs && $(COMPOSE) up -d
+	@echo "$(G)✓ Services started!$(RESET)"
+
+up-debug:
+	@cd srcs && $(COMPOSE) up
 
 down:
-	@$(COMPOSE) down $(COMPOSE_DOWN_FLAGS)
+	@echo "$(Y)=== Stoping services ===$(RESET)"
+	@cd srcs && $(COMPOSE) down
+	@echo "$(G)✓ Services stoped$(RESET)"
 
-re: down build up
+re: down up
+
+reload:
+	@cd srcs && $(COMPOSE) restart
+#--------------------
+# Specific service building
+mariadb: build
+	@cd srcs && $(COMPOSE) up -d mariadb
+
+wordpress: build
+	@cd srcs && $(COMPOSE) up -d wordpress
+
+nginx: build
+	@cd srcs && $(COMPOSE) up -d nginx
 #--------------------
 # Other Comands:
 ps:
 	@$(COMPOSE) ps
+
+status:
+	@echo "$(B)=== Service Status ===$(RESET)"
+	@cd srcs && $(COMPOSE) ps
+	@echo ""
+	@echo "$(B)=== Volumes ===$(RESET)"
+	@docker volume ls | grep srcs_ || echo "No volumes!"
+	@echo ""
+	@echo "$(B)=== Network ===$(RESET)"
+	@docker network ls | grep srcs_ || echo "No network!"
+
+check:
+	@echo "$(B)=== Checking config ===$(RESET)"
+	@cd srcs && $(COMPOSE) config
 # ********************************************************************************* #
 # Clean region
+clean: down
+	@echo "$(Y)=== Cleaning containers ===$(RESET)"
+	@docker rm -f $(shell docker ps -aq) 2>/dev/null || true
+	@echo "$(G)✓ Containers cleaned$(RESET)"
 
-clean:
-	@$(COMPOSE) down -v --remove-orphans
-	@echo "$(B)\n All cleaned succesfully$(DEF)\n"
-
+# Limpiar contenederos e imágenes
 fclean: clean
-	@docker system prune -af
-	@echo "$(B)\n Deep clean doned!"
+	@echo "$(Y)=== Cleaning images ===$(RESET)"
+	@docker rmi -f $(shell docker images -q) 2>/dev/null || true
+	@echo "$(G)✓ Images cleaned$(RESET)"
 
 clear: fclean
 	@clear
+
+reset: down fclean volclean
+	@echo "$(G)✓ Successfull reset$(RESET)"
 # -------------------- #
-.PHONY: all author help clean clear fclean re
-.PHONY: build up down ps
+.PHONY: all setup build up up-debug down re reload logs status exec clean fclean volclean reset check help
 # ********************************************************************************** #

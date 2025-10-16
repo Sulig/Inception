@@ -16,7 +16,7 @@ COPY tools/configure.sh /tmp/configure.sh
 RUN chmod +x /tmp/configure.sh
 
 # Copiar configuración personalizada
-COPY conf/my.cnf /etc/my.cnf
+COPY conf/mariadb.conf /etc/mariadb.conf
 
 # Puerto de MariaDB
 EXPOSE 3306

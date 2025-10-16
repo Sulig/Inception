@@ -40,31 +40,29 @@ services:
       - wordpress_data:/var/www/html
 
   nginx:
-    build:
-      context: ./requirements/nginx
-      dockerfile: Dockerfile
+    build: ./requirements/nginx
     container_name: nginx
     restart: unless-stopped
     depends_on:
       - wordpress
     ports:
       - "443:443"
-    environment:
-      - DOMAIN_NAME=${DOMAIN_NAME}
     networks:
       - inception
+    env_file:
+      - .env
+    environment:
+      - DOMAIN_NAME=${DOMAIN_NAME}
     volumes:
       - wordpress_data:/var/www/html:ro
-      - nginx_certs:/etc/ssl/private:ro
-      - nginx_conf:/etc/nginx/conf.d:ro
+      - nginx_ssl:/etc/nginx/ssl
+
 
 volumes:
 
   mariadb_data:
   wordpress_data:
-
-  nginx_certs:
-  nginx_conf:
+  nginx_ssl:
 
 networks:
   inception:

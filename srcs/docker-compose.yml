@@ -56,16 +56,10 @@ services:
 volumes:
 
   mariadb_data:
-    driver: local
-
   wordpress_data:
-    driver: local
 
   nginx_certs:
-    driver: local
-
   nginx_conf:
-    driver: local
 
 networks:
   inception:

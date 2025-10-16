@@ -17,11 +17,9 @@ echo "Database is ready!"
 if [ ! -f /var/www/html/wp-config.php ]; then
     echo "WordPress not found. Installing..."
 
-    # Descargar WordPress
-    wp core download --path=/var/www/html --locale=en_US --allow-root
-
-    # Crear archivo de configuración
-    wp config create \
+    # Cambiar temporalmente a root para la instalación
+    su-exec root wp core download --path=/var/www/html --locale=en_US
+    su-exec root wp config create \
         --path=/var/www/html \
         --dbname=${WORDPRESS_DB_NAME} \
         --dbuser=${WORDPRESS_DB_USER} \
@@ -29,37 +27,34 @@ if [ ! -f /var/www/html/wp-config.php ]; then
         --dbhost=${WORDPRESS_DB_HOST} \
         --dbcharset=utf8 \
         --dbcollate=utf8_general_ci \
-        --skip-check \
-        --allow-root
+        --skip-check
 
     # Instalar WordPress
-    wp core install \
+    su-exec root wp core install \
         --path=/var/www/html \
         --url=https://${DOMAIN_NAME} \
         --title="Inception Project" \
         --admin_user=${WP_ADMIN_USER} \
         --admin_password=${WP_ADMIN_PASSWORD} \
         --admin_email=${WP_ADMIN_EMAIL} \
-        --skip-email \
-        --allow-root
+        --skip-email
 
-    # Configuraciones adicionales de WordPress
-    wp option update siteurl "https://${DOMAIN_NAME}" --path=/var/www/html --allow-root
-    wp option update home "https://${DOMAIN_NAME}" --path=/var/www/html --allow-root
+    # Configuraciones adicionales
+    su-exec root wp option update siteurl "https://${DOMAIN_NAME}" --path=/var/www/html
+    su-exec root wp option update home "https://${DOMAIN_NAME}" --path=/var/www/html
 
     # Configurar permisos para uploads
     mkdir -p /var/www/html/wp-content/uploads
-    chmod 755 /var/www/html/wp-content/uploads
 
     echo "WordPress installed successfully!"
 else
     echo "WordPress is already installed."
 fi
 
-# Configurar permisos
-chown -R wordpress:wordpress /var/www/html
+# Configurar permisos finales
 find /var/www/html -type d -exec chmod 755 {} \;
 find /var/www/html -type f -exec chmod 644 {} \;
+chmod 755 /var/www/html/wp-content/uploads
 
 echo "Starting PHP-FPM..."
 exec php-fpm81 -F

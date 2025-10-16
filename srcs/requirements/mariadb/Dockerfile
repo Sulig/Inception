@@ -1,29 +1,28 @@
+# Usamos la penúltima versión estable de Alpine
 FROM alpine:3.18
 
-# Install MariaDB with client and dependencies
-RUN apk update && \
-    apk add --no-cache \
-        mariadb \
-        mariadb-client \
-        mariadb-server-utils \
-        bash \
-        tzdata \
-        && rm -rf /var/cache/apk/*
+# Instalamos MariaDB
+RUN apk update && apk add --no-cache \
+    mariadb \
+    mariadb-client \
+    && rm -rf /var/cache/apk/*
 
-# Create all necessary directories with proper permissions
-RUN mkdir -p /var/run/mysqld /var/lib/mysql /var/log/mysql && \
-    chown -R mysql:mysql /var/run/mysqld /var/lib/mysql /var/log/mysql
+# Crear directorios necesarios
+RUN mkdir -p /run/mysqld /var/lib/mysql
+RUN chown -R mysql:mysql /run/mysqld /var/lib/mysql
 
-# Copy configuration files
-COPY conf/mariadb.conf /etc/my.cnf
-COPY tools/configure.sh /usr/local/bin/configure.sh
+# Copiar script de configuración
+COPY tools/configure.sh /tmp/configure.sh
+RUN chmod +x /tmp/configure.sh
 
-# Set permissions and verify
-RUN chmod +x /usr/local/bin/configure.sh && \
-    chown mysql:mysql /usr/local/bin/configure.sh
+# Copiar configuración personalizada
+COPY conf/my.cnf /etc/my.cnf
 
-VOLUME /var/lib/mysql
+# Puerto de MariaDB
 EXPOSE 3306
 
-ENTRYPOINT ["/usr/local/bin/configure.sh"]
-CMD ["mysqld", "--user=mysql"]
+# Volumen para datos
+VOLUME /var/lib/mysql
+
+# Comando de inicio
+CMD ["/tmp/configure.sh"]

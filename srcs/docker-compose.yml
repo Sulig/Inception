@@ -1,23 +1,20 @@
-version: "3.9"
-
 services:
 
   mariadb:
-    build:
-      context: ./requirements/mariadb
-      dockerfile: Dockerfile
-    image: mariadb
-    restart: always
-    networks:
-      - backend_net
-    volumes:
-      - /home/sadoming/data/mariadb:/var/lib/mysql
-      - /home/sadoming/data/mariadb/init:/docker-entrypoint-initdb.d:ro
+    build: ./requirements/mariadb
+    container_name: mariadb
+    env_file:
+      - .env
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - inception
+    restart: unless-stopped
 
   wordpress:
     build:
@@ -28,7 +25,7 @@ services:
     depends_on:
       - mariadb
     networks:
-      - backend_net
+      - inception
     volumes:
       - /home/sadoming/data/wordpress:/var/www/html
       - /home/sadoming/data/php-uploads:/var/www/html/wp-content/uploads
@@ -52,15 +49,22 @@ services:
     environment:
       - DOMAIN_NAME=${DOMAIN_NAME}
     networks:
-      - backend_net
+      - inception
     volumes:
       - /home/sadoming/data/wordpress:/var/www/html:ro
       - /home/sadoming/data/nginx/certs:/etc/ssl/private:ro
       - /home/sadoming/data/nginx/conf:/etc/nginx/conf.d:ro
 
+volumes:
+  mariadb_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/${USER}/data/mariadb
 
 networks:
-  backend_net:
+  inception:
     driver: bridge
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\

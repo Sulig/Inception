@@ -6,7 +6,7 @@
 #    By: sadoming <sadoming@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/10/14 17:25:36 by sadoming          #+#    #+#              #
-#    Updated: 2025/10/16 13:03:56 by sadoming         ###   ########.fr        #
+#    Updated: 2025/10/16 13:26:09 by sadoming         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -65,6 +65,7 @@ setup:
 	@mkdir -p $(DATA_PATH)/mariadb
 	@mkdir -p $(DATA_PATH)/wordpress
 	@mkdir -p $(DATA_PATH)/nginx
+	@mkdir -p /home/sadoming/data/nginx/{certs,conf}
 	@echo "$(G)✓ Dirs created$(DEF)"
 	@if [ ! -f ./srcs/.env ]; then \
 		echo "$(Y)⚠ Creating .env using the template$(DEF)"; \

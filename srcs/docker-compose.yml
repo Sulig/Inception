@@ -20,28 +20,26 @@ services:
     build:
       context: ./requirements/wordpress
       dockerfile: Dockerfile
-    image: wordpress
-    restart: always
+    container_name: wordpress
+    restart: unless-stopped
     depends_on:
       - mariadb
     networks:
       - inception
     volumes:
-      - /home/sadoming/data/wordpress:/var/www/html
-      - /home/sadoming/data/php-uploads:/var/www/html/wp-content/uploads
+      - wordpress_data:/var/www/html
     environment:
-      WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
-      WORDPRESS_DB_PORT: ${WORDPRESS_DB_PORT}
-      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
-      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
+      WORDPRESS_DB_HOST: mariadb
+      WORDPRESS_DB_USER: ${MYSQL_USER}
       WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
 
   nginx:
     build:
       context: ./requirements/nginx
       dockerfile: Dockerfile
-    image: nginx
-    restart: always
+    container_name: nginx
+    restart: unless-stopped
     depends_on:
       - wordpress
     ports:
@@ -51,17 +49,38 @@ services:
     networks:
       - inception
     volumes:
-      - /home/sadoming/data/wordpress:/var/www/html:ro
-      - /home/sadoming/data/nginx/certs:/etc/ssl/private:ro
-      - /home/sadoming/data/nginx/conf:/etc/nginx/conf.d:ro
+      - wordpress_data:/var/www/html:ro
+      - nginx_certs:/etc/ssl/private:ro
+      - nginx_conf:/etc/nginx/conf.d:ro
 
 volumes:
+
   mariadb_data:
     driver: local
     driver_opts:
       type: none
       o: bind
       device: /home/${USER}/data/mariadb
+
+  wordpress_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/${USER}/data/wordpress
+
+  nginx_certs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/${USER}/data/nginx/certs
+  nginx_conf:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/${USER}/data/nginx/conf
 
 networks:
   inception:

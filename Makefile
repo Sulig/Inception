@@ -6,7 +6,7 @@
 #    By: sadoming <sadoming@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/10/14 17:25:36 by sadoming          #+#    #+#              #
-#    Updated: 2025/10/16 14:02:00 by sadoming         ###   ########.fr        #
+#    Updated: 2025/10/16 19:10:32 by sadoming         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -73,7 +73,7 @@ setup:
 
 # Building Comands:
 build:
-	@echo "$(B)=== CBuilding Docker imgs ===$(RESET)"
+	@echo "$(B)=== Building Docker imgs ===$(RESET)"
 	@cd srcs && $(COMPOSE) build
 	@echo "$(G)✓ Builded correctly!$(RESET)"
 
@@ -95,7 +95,7 @@ re: down up
 reload:
 	@cd srcs && $(COMPOSE) restart
 #--------------------
-# Specific service building
+# Specific service activating
 mariadb: build
 	@cd srcs && $(COMPOSE) up -d mariadb
 
@@ -107,7 +107,7 @@ nginx: build
 #--------------------
 # Other Comands:
 ps:
-	@$(COMPOSE) ps
+	@cd srcs && $(COMPOSE) ps
 
 status:
 	@echo "$(B)=== Service Status ===$(RESET)"

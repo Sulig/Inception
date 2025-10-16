@@ -1,4 +1,3 @@
-# Usamos la penúltima versión estable de Alpine
 FROM alpine:3.18
 
 # Instalar PHP, FPM y extensiones necesarias para WordPress
@@ -28,17 +27,13 @@ RUN apk update && apk add --no-cache \
     wget \
     curl \
     mariadb-client \
-    su-exec \
     && rm -rf /var/cache/apk/*
 
-# Crear directorios primero como root
-RUN mkdir -p /var/www/html /run/php
-
 # Crear usuario y grupo para WordPress
-RUN addgroup -g 1000 wordpress && \
-    adduser -u 1000 -S -H -D -s /bin/false -G wordpress wordpress
+RUN adduser -S -H -D -s /bin/false wordpress
 
-# Establecer permisos después de crear el usuario
+# Crear directorios necesarios
+RUN mkdir -p /var/www/html /run/php
 RUN chown -R wordpress:wordpress /var/www/html
 
 # Descargar y instalar WordPress CLI

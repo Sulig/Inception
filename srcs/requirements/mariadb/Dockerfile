@@ -1,25 +1,29 @@
 FROM alpine:3.18
 
+# Install MariaDB with client and dependencies
 RUN apk update && \
-    apk add --no-cache mariadb mariadb-client bash
+    apk add --no-cache \
+        mariadb \
+        mariadb-client \
+        mariadb-server-utils \
+        bash \
+        tzdata \
+        && rm -rf /var/cache/apk/*
 
-RUN mkdir -p /var/run/mysqld /var/lib/mysql
+# Create all necessary directories with proper permissions
+RUN mkdir -p /var/run/mysqld /var/lib/mysql /var/log/mysql && \
+    chown -R mysql:mysql /var/run/mysqld /var/lib/mysql /var/log/mysql
 
-# Debug: listar archivos en el contexto de build
-COPY . /tmp/build-context/
-RUN ls -la /tmp/build-context/
-
-# Copiar archivos específicos
+# Copy configuration files
 COPY conf/mariadb.conf /etc/my.cnf
 COPY tools/configure.sh /usr/local/bin/configure.sh
 
+# Set permissions and verify
 RUN chmod +x /usr/local/bin/configure.sh && \
-    echo "=== File check ===" && \
-    ls -la /usr/local/bin/configure.sh && \
-    file /usr/local/bin/configure.sh
+    chown mysql:mysql /usr/local/bin/configure.sh
 
 VOLUME /var/lib/mysql
 EXPOSE 3306
 
-# Temporal: usar sleep para debugging
-CMD ["sleep", "3600"]
+ENTRYPOINT ["/usr/local/bin/configure.sh"]
+CMD ["mysqld", "--user=mysql"]

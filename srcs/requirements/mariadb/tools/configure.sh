@@ -3,6 +3,10 @@ set -eu
 
 [ "${DEBUG:-}" = "1" ] && set -x
 
+echo "=== Starting MariaDB configuration ==="
+echo "Script location: $(pwd)"
+echo "Script path: $0"
+
 : "${MYSQL_ROOT_PASSWORD:?Need MYSQL_ROOT_PASSWORD non-empty}"
 : "${MYSQL_DATABASE:?Need MYSQL_DATABASE non-empty}"
 : "${MYSQL_USER:?Need MYSQL_USER non-empty}"
@@ -11,7 +15,7 @@ set -eu
 DATADIR=/var/lib/mysql
 SOCKET="/var/run/mysqld/mysqld.sock"
 
-# Ensure permissions
+echo "=== Setting up directories and permissions ==="
 chown -R mysql:mysql "$DATADIR"
 chown -R mysql:mysql /var/run/mysqld
 

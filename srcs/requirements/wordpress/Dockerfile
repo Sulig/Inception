@@ -29,12 +29,15 @@ RUN apk update && apk add --no-cache \
     mariadb-client \
     && rm -rf /var/cache/apk/*
 
-# Crear usuario y grupo para WordPress
-RUN adduser -S -H -D -s /bin/false wordpress
-
-# Crear directorios necesarios
+# Crear directorios primero como root
 RUN mkdir -p /var/www/html /run/php
-RUN chown -R wordpress:wordpress /var/www/html
+
+# Crear usuario y grupo con UID/GID específicos
+RUN addgroup -g 1000 wordpress && \
+    adduser -u 1000 -S -H -D -s /bin/false -G wordpress wordpress
+
+# Establecer permisos usando UID/GID (evita problemas de usuario entre capas)
+RUN chown -R 1000:1000 /var/www/html
 
 # Descargar y instalar WordPress CLI
 RUN wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \

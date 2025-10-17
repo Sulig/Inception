@@ -2,23 +2,17 @@
 # srcs/requirements/wordpress/tools/configure.sh
 set -e
 
-echo "🔍 Esperando a que MariaDB esté lista..."
+echo "🔍 Esperando a MariaDB..."
 
-# Esperar hasta que MariaDB esté disponible
-until mysql -h mariadb -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} -e "SELECT 1;" ${WORDPRESS_DB_NAME} 2>/dev/null; do
-    echo "⏳ MariaDB no está lista aún... esperando"
-    sleep 2
-done
+# Espera simple sin verificación compleja
+sleep 10
 
-echo "✅ MariaDB está lista!"
+echo "🎯 Configurando WordPress..."
 
-echo "🎯 Verificando configuración de WordPress..."
-
-# Si wp-config.php no existe, crearlo
+# Solo crear wp-config.php si no existe
 if [ ! -f "/var/www/html/wp-config.php" ]; then
     echo "📝 Creando wp-config.php..."
 
-    # Crear wp-config.php básico
     cat > /var/www/html/wp-config.php << EOF
 <?php
 define('DB_NAME', '${WORDPRESS_DB_NAME}');
@@ -48,16 +42,10 @@ require_once ABSPATH . 'wp-settings.php';
 EOF
 
     echo "✅ wp-config.php creado"
-else
-    echo "✅ wp-config.php ya existe"
 fi
 
-# Asegurar permisos
+# Permisos básicos
 chown -R nobody:nobody /var/www/html
-chmod -R 755 /var/www/html
-chmod 644 /var/www/html/wp-config.php
 
 echo "🚀 Iniciando PHP-FPM..."
 exec php-fpm81 -F
-
-###

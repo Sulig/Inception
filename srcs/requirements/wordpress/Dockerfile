@@ -14,35 +14,30 @@ RUN apk update && apk add --no-cache \
     php81-openssl \
     php81-xml \
     php81-zip \
-    wget
+    wget \
+    mariadb-client \
+    openssl
 
-# Crear directorio ANTES de mover los archivos
-RUN mkdir -p /var/www/html
+# Crear directorios necesarios
+RUN mkdir -p /var/www/html && \
+    mkdir -p /var/run/php && \
+    chown -R nobody:nobody /var/www/html && \
+    chown nobody:nobody /var/run/php
 
-# Descargar y extraer WordPress
-RUN wget https://wordpress.org/latest.tar.gz -O /tmp/wordpress.tar.gz
-RUN tar -xzf /tmp/wordpress.tar.gz -C /tmp
-
-# Verificar que los archivos existen antes de moverlos
-RUN ls -la /tmp/wordpress/  # Para debugging
-
-# Mover WordPress al directorio correcto
-RUN mv /tmp/wordpress/* /var/www/html/
-
-# Configurar permisos
-RUN chown -R nobody:nobody /var/www/html
-RUN chmod -R 755 /var/www/html
+# Descargar WordPress
+RUN wget https://wordpress.org/latest.tar.gz -O /tmp/wordpress.tar.gz && \
+    tar -xzf /tmp/wordpress.tar.gz -C /tmp && \
+    cp -r /tmp/wordpress/* /var/www/html/ && \
+    rm -rf /tmp/wordpress*
 
 # Configurar PHP-FPM
-RUN sed -i 's/listen = 127.0.0.1:9000/listen = 9000/g' /etc/php81/php-fpm.d/www.conf
-RUN sed -i 's/;daemonize = yes/daemonize = no/g' /etc/php81/php-fpm.conf
+RUN sed -i 's/listen = 127.0.0.1:9000/listen = 9000/g' /etc/php81/php-fpm.d/www.conf && \
+    sed -i 's/;daemonize = yes/daemonize = no/g' /etc/php81/php-fpm.conf
 
-# Crear directorio para PHP-FPM sockets
-RUN mkdir -p /var/run/php
-RUN chown nobody:nobody /var/run/php
+# Copiar script de configuración
+COPY tools/configure.sh /usr/local/bin/configure.sh
+RUN chmod +x /usr/local/bin/configure.sh
 
-# Puerto de PHP-FPM
 EXPOSE 9000
 
-# Iniciar PHP-FPM en primer plano
-CMD ["php-fpm81", "-F"]
+CMD ["/usr/local/bin/configure.sh"]

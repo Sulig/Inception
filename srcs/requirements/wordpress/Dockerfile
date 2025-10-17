@@ -44,3 +44,5 @@ RUN chmod +x /usr/local/bin/configure.sh
 EXPOSE 9000
 
 CMD ["/usr/local/bin/configure.sh"]
+
+##############

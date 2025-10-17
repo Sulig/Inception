@@ -19,5 +19,5 @@ EXPOSE 3306
 # Volumen para persistencia
 VOLUME /var/lib/mysql
 
-# Usar el script de configuración como entrypoint
+# Usar el script de configuración como entrypoint#
 ENTRYPOINT ["/tmp/configure.sh"]

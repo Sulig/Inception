@@ -59,3 +59,5 @@ chmod 644 /var/www/html/wp-config.php
 
 echo "🚀 Iniciando PHP-FPM..."
 exec php-fpm81 -F
+
+###

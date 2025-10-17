@@ -44,3 +44,5 @@ fi
 
 echo "🎯 Iniciando MariaDB definitivamente..."
 exec mysqld_safe --datadir=/var/lib/mysql
+
+###

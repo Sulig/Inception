@@ -28,11 +28,14 @@ RUN mkdir -p /var/www/html && \
 RUN wget https://wordpress.org/latest.tar.gz -O /tmp/wordpress.tar.gz && \
     tar -xzf /tmp/wordpress.tar.gz -C /tmp && \
     cp -r /tmp/wordpress/* /var/www/html/ && \
-    rm -rf /tmp/wordpress*
+    rm -rf /tmp/wordpress* && \
+    chown -R nobody:nobody /var/www/html
 
-# Configurar PHP-FPM
-RUN sed -i 's/listen = 127.0.0.1:9000/listen = 9000/g' /etc/php81/php-fpm.d/www.conf && \
-    sed -i 's/;daemonize = yes/daemonize = no/g' /etc/php81/php-fpm.conf
+# Configurar PHP-FPM para escuchar en todas las interfaces
+RUN sed -i 's/listen = 127.0.0.1:9000/listen = 0.0.0.0:9000/g' /etc/php81/php-fpm.d/www.conf && \
+    sed -i 's/;daemonize = yes/daemonize = no/g' /etc/php81/php-fpm.conf && \
+    sed -i 's/user = nobody/user = nobody/g' /etc/php81/php-fpm.d/www.conf && \
+    sed -i 's/group = nobody/group = nobody/g' /etc/php81/php-fpm.d/www.conf
 
 # Copiar script de configuración
 COPY tools/configure.sh /usr/local/bin/configure.sh

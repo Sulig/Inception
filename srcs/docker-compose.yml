@@ -1,71 +1,67 @@
 services:
 
   mariadb:
-    build: ./requirements/mariadb
-    container_name: mariadb
-    restart: unless-stopped
+    image: mariadb:10.6
+    restart: always
     networks:
-      - inception
-    env_file:
-      - .env
-    environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - backend_net
     volumes:
       - mariadb_data:/var/lib/mysql
-
+    secrets:
+      - db_root_password
+      - db_password
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
 
   wordpress:
-    build: ./requirements/wordpress
-    container_name: wordpress
-    restart: unless-stopped
+    image: wordpress:6.4-fpm
     depends_on:
       - mariadb
     networks:
-      - inception
-    env_file:
-      - .env
-    environment:
-      - WORDPRESS_DB_HOST=mariadb
-      - WORDPRESS_DB_USER=${MYSQL_USER}
-      - WORDPRESS_DB_PASSWORD=${MYSQL_PASSWORD}
-      - WORDPRESS_DB_NAME=${MYSQL_DATABASE}
-      - WP_ADMIN_USER=${WP_ADMIN_USER}
-      - WP_ADMIN_PASSWORD=${WP_ADMIN_PASSWORD}
-      - WP_ADMIN_EMAIL=${WP_ADMIN_EMAIL}
-      - DOMAIN_NAME=${DOMAIN_NAME}
+      - backend_net
     volumes:
       - wordpress_data:/var/www/html
+    secrets:
+      - db_password
+    environment:
+      WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
+      WORDPRESS_DB_PORT: ${WORDPRESS_DB_PORT}
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
 
   nginx:
-    build: ./requirements/nginx
-    container_name: nginx
-    restart: unless-stopped
+    build:
+      context: ./requirements/nginx
+      dockerfile: Dockerfile
+    image: nginx
     depends_on:
       - wordpress
     ports:
       - "443:443"
     networks:
-      - inception
-    env_file:
-      - .env
+      - backend_net
+    volumes:
+      - wordpress_data:/var/www/html
     environment:
       - DOMAIN_NAME=${DOMAIN_NAME}
-    volumes:
-      - wordpress_data:/var/www/html:ro
-      - nginx_ssl:/etc/nginx/ssl
-
-
-volumes:
-
-  mariadb_data:
-  wordpress_data:
-  nginx_ssl:
 
 networks:
-  inception:
-    driver: bridge
+  backend_net:
+
+volumes:
+  mariadb_data: {}
+  wordpress_data: {}
+
+# Using the passwords saved in /secrets...
+#  Note todo later: Maybe i can save that secrets on my github using the secrets label?
+secrets:
+  db_root_password:
+    file: ../secrets/db_root_password.txt
+  db_password:
+    file: ../secrets/db_password.txt
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\

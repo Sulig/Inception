@@ -6,7 +6,7 @@
 #    By: sadoming <sadoming@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/10/14 17:25:36 by sadoming          #+#    #+#              #
-#    Updated: 2025/10/20 19:55:29 by sadoming         ###   ########.fr        #
+#    Updated: 2025/10/20 20:06:09 by sadoming         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -138,6 +138,10 @@ fclean: clean
 
 clear: fclean
 	@clear
+
+volclean: fclean
+	@docker builder prune
+	@docker system prune -a
 
 DEF: down fclean volclean
 	@echo "$(G)✓ Successfull DEF$(DEF)"

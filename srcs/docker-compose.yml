@@ -8,7 +8,7 @@ services:
     networks:
       - inception
     env_file:
-      - ../.env
+      - .env
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -28,7 +28,7 @@ services:
     networks:
       - inception
     env_file:
-      - ../.env
+      - .env
     environment:
        WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
        WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
@@ -49,7 +49,7 @@ services:
     networks:
       - inception
     env_file:
-      - ../.env
+      - .env
     environment:
       DOMAIN_NAME: ${DOMAIN_NAME}
     volumes:

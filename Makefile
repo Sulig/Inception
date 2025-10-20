@@ -6,7 +6,7 @@
 #    By: sadoming <sadoming@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/10/14 17:25:36 by sadoming          #+#    #+#              #
-#    Updated: 2025/10/17 14:27:32 by sadoming         ###   ########.fr        #
+#    Updated: 2025/10/20 19:55:29 by sadoming         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -68,7 +68,7 @@ setup:
 	@echo "$(G)✓ Dirs created$(DEF)"
 	@if [ ! -f ./srcs/.env ]; then \
 		echo "$(Y)⚠ Creating .env using the template$(DEF)"; \
-		cp ./srcs/.env.example ./srcs/.env 2>/dev/null || echo "$(R)✗ Template '.env.example' not found!$(DEF)"; \
+		cp ./srcs/.env.template ./srcs/.env 2>/dev/null || echo "$(R)✗ Template '.env.template' not found!$(DEF)"; \
 	fi
 
 # Building Comands:

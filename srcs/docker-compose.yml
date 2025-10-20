@@ -2,12 +2,13 @@ services:
 
   mariadb:
     build: ./requirements/mariadb
+    image: mariadb
     container_name: mariadb
     restart: unless-stopped
     networks:
       - inception
     env_file:
-      - .env
+      - ../.env
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -19,6 +20,7 @@ services:
 
   wordpress:
     build: ./requirements/wordpress
+    image: wordpress
     container_name: wordpress
     restart: unless-stopped
     depends_on:
@@ -26,7 +28,7 @@ services:
     networks:
       - inception
     env_file:
-      - .env
+      - ../.env
     environment:
        WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
        WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
@@ -37,6 +39,7 @@ services:
 
   nginx:
     build: ./requirements/nginx
+    image: nginx
     container_name: nginx
     restart: unless-stopped
     depends_on:
@@ -46,7 +49,7 @@ services:
     networks:
       - inception
     env_file:
-      - .env
+      - ../.env
     environment:
       DOMAIN_NAME: ${DOMAIN_NAME}
     volumes:
@@ -62,12 +65,12 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: /home/${USER}/data/mariadb
+      device: /home/sadoming/data/mariadb
   wordpress_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /home/${USER}/data/wordpress
+      device: /home/sadoming/data/wordpress
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\

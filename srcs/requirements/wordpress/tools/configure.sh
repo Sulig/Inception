@@ -1,5 +1,4 @@
 #!/bin/sh
-# srcs/requirements/wordpress/tools/configure.sh
 set -e
 
 echo "🎯 Configurando WordPress..."
@@ -22,12 +21,14 @@ echo "✅ Conectado a MariaDB"
 if [ ! -f "/var/www/html/wp-config.php" ]; then
     echo "📝 Creando wp-config.php..."
 
-    wp --path=/var/www/html config create \
+    # Usar WP-CLI para crear la configuración
+    su-exec nobody:nobody /usr/local/bin/wp config create \
         --dbname=${WORDPRESS_DB_NAME} \
         --dbuser=${WORDPRESS_DB_USER} \
         --dbpass=${WORDPRESS_DB_PASSWORD} \
         --dbhost=mariadb \
         --locale=es_ES \
+        --path=/var/www/html \
         --skip-check
 
     echo "✅ wp-config.php creado"
@@ -36,15 +37,16 @@ else
 fi
 
 # Instalar WordPress si no está instalado
-if ! wp --path=/var/www/html core is-installed; then
+if ! su-exec nobody:nobody /usr/local/bin/wp core is-installed --path=/var/www/html; then
     echo "📀 Instalando WordPress..."
 
-    wp --path=/var/www/html core install \
+    su-exec nobody:nobody /usr/local/bin/wp core install \
         --url=https://${DOMAIN_NAME} \
         --title="Inception Project" \
         --admin_user=${WORDPRESS_ADMIN_USER} \
         --admin_password=${WORDPRESS_ADMIN_PASSWORD} \
         --admin_email=${WORDPRESS_ADMIN_EMAIL} \
+        --path=/var/www/html \
         --skip-email
 
     echo "✅ WordPress instalado automáticamente"
@@ -52,9 +54,8 @@ else
     echo "✅ WordPress ya está instalado"
 fi
 
-# Configurar idioma español (si es necesario)
-wp --path=/var/www/html language core install es_ES
-wp --path=/var/www/html site switch-language es_ES
+# Configurar idioma español
+su-exec nobody:nobody /usr/local/bin/wp language core install es_ES --path=/var/www/html --activate
 
 # Configurar permisos
 chown -R nobody:nobody /var/www/html

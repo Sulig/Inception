@@ -13,17 +13,23 @@ RUN apk update && apk add --no-cache \
     php81-openssl \
     php81-xml \
     php81-zip \
-    php81-simplexml \
+    php81-phar \
     php81-ctype \
-    php81-iconv \
+    php81-tokenizer \
+    php81-simplexml \
     wget \
     mariadb-client \
     curl
 
-# Instalar WP-CLI
+# Instalar WP-CLI (versión más estable)
 RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && \
     chmod +x wp-cli.phar && \
     mv wp-cli.phar /usr/local/bin/wp
+
+# Crear un wrapper para WP-CLI que use el usuario correcto
+RUN echo '#!/bin/sh' > /usr/local/bin/wp-cli && \
+    echo 'su-exec nobody:nobody /usr/local/bin/wp "$@" --path=/var/www/html' >> /usr/local/bin/wp-cli && \
+    chmod +x /usr/local/bin/wp-cli
 
 # Crear directorios necesarios
 RUN mkdir -p /var/www/html && \
@@ -36,9 +42,10 @@ RUN wget https://wordpress.org/latest.tar.gz -O /tmp/wordpress.tar.gz && \
     rm -rf /tmp/wordpress* && \
     chown -R nobody:nobody /var/www/html
 
-# Configurar PHP-FPM
+# Configurar PHP-FPM para escuchar en todas las interfaces
 RUN sed -i 's/listen = 127.0.0.1:9000/listen = 0.0.0.0:9000/g' /etc/php81/php-fpm.d/www.conf && \
-    sed -i 's/;daemonize = yes/daemonize = no/g' /etc/php81/php-fpm.conf
+    sed -i 's/;daemonize = yes/daemonize = no/g' /etc/php81/php-fpm.conf && \
+    echo "clear_env = no" >> /etc/php81/php-fpm.d/www.conf
 
 # Script de configuración
 COPY tools/configure.sh /configure.sh

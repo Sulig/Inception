@@ -6,7 +6,16 @@ echo "🎯 Configurando WordPress..."
 
 # Esperar un momento para que MariaDB esté listo
 echo "⏳ Esperando a MariaDB..."
-sleep 15
+sleep 20
+
+echo "🔍 Verificando conexión a MariaDB..."
+# Probar conexión a MariaDB
+if mysql -h mariadb -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} -e "SELECT 1;" ${WORDPRESS_DB_NAME} 2>/dev/null; then
+    echo "✅ Conectado a MariaDB"
+else
+    echo "❌ No se puede conectar a MariaDB"
+    # Continuar de todos modos, WordPress intentará reconectar
+fi
 
 # Solo crear wp-config.php si no existe
 if [ ! -f "/var/www/html/wp-config.php" ]; then
@@ -41,6 +50,8 @@ require_once ABSPATH . 'wp-settings.php';
 EOF
 
     echo "✅ wp-config.php creado"
+else
+    echo "✅ wp-config.php ya existe"
 fi
 
 # Permisos básicos

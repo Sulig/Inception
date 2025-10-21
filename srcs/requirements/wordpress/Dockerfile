@@ -13,11 +13,17 @@ RUN apk update && apk add --no-cache \
     php81-openssl \
     php81-xml \
     php81-zip \
-    php81-phar \
-    php81-tokenizer \
+    php81-simplexml \
+    php81-ctype \
+    php81-iconv \
     wget \
     mariadb-client \
     curl
+
+# Instalar WP-CLI
+RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && \
+    chmod +x wp-cli.phar && \
+    mv wp-cli.phar /usr/local/bin/wp
 
 # Crear directorios necesarios
 RUN mkdir -p /var/www/html && \
@@ -32,8 +38,7 @@ RUN wget https://wordpress.org/latest.tar.gz -O /tmp/wordpress.tar.gz && \
 
 # Configurar PHP-FPM
 RUN sed -i 's/listen = 127.0.0.1:9000/listen = 0.0.0.0:9000/g' /etc/php81/php-fpm.d/www.conf && \
-    sed -i 's/;daemonize = yes/daemonize = no/g' /etc/php81/php-fpm.conf && \
-    echo "clear_env = no" >> /etc/php81/php-fpm.d/www.conf
+    sed -i 's/;daemonize = yes/daemonize = no/g' /etc/php81/php-fpm.conf
 
 # Script de configuración
 COPY tools/configure.sh /configure.sh

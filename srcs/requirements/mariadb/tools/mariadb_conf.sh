@@ -24,9 +24,8 @@ if [ ! -d "/var/lib/mysql/mysql" ]; then
     # Comandos actualizados para MariaDB 10.11
     mysql -S /run/mysqld/mysqld.sock -uroot <<-EOSQL
         FLUSH PRIVILEGES;
-        -- Configurar password root (método compatible con MariaDB 10.11)
-        UPDATE mysql.user SET authentication_string = PASSWORD('${MYSQL_ROOT_PASSWORD}') WHERE User='root';
-        UPDATE mysql.user SET plugin = 'mysql_native_password' WHERE User='root';
+        -- Configurar password root
+        ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
 
         -- Crear base de datos y usuario para WordPress
         CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
@@ -45,18 +44,5 @@ EOSQL
 fi
 
 echo "🎯 Iniciando MariaDB..."
-# Crear archivo de configuración para forzar puerto 3306
-mkdir -p /etc/my.cnf.d
-cat > /etc/my.cnf.d/server.cnf << EOF
-[mysqld]
-port=3306
-bind-address=0.0.0.0
-socket=/run/mysqld/mysqld.sock
-
-[client]
-port=3306
-socket=/run/mysqld/mysqld.sock
-EOF
-
-# Iniciar MariaDB
-exec mysqld --user=mysql
+# Iniciar MariaDB forzando puerto 3306 y bind address
+exec mysqld --user=mysql --port=3306 --bind-address=0.0.0.0 --socket=/run/mysqld/mysqld.sock

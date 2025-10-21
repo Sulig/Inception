@@ -19,7 +19,9 @@ RUN apk update && apk add --no-cache \
     php81-simplexml \
     wget \
     mariadb-client \
-    curl
+    curl \
+	su-exec \
+    shadow
 
 # Instalar WP-CLI (versión más estable)
 RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && \

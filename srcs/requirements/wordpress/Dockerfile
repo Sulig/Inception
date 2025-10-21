@@ -21,7 +21,10 @@ RUN apk update && apk add --no-cache \
     mariadb-client \
     curl \
 	su-exec \
-    shadow
+    shadow \
+	netcat-openbsd \
+    iputils \
+    bind-tools
 
 # Instalar WP-CLI (versión más estable)
 RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && \

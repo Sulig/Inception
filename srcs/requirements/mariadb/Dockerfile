@@ -1,23 +1,12 @@
-# srcs/requirements/mariadb/Dockerfile
 FROM alpine:3.18
 
 RUN apk update && apk add --no-cache \
     mariadb \
-    mariadb-client \
-    su-exec
+    mariadb-client
 
-# Crear directorios necesarios
-RUN mkdir -p /var/lib/mysql && \
-    mkdir -p /run/mysqld
-
-# Configurar permisos
-RUN chown -R mysql:mysql /var/lib/mysql && \
-    chown -R mysql:mysql /run/mysqld && \
-    chmod 755 /var/lib/mysql && \
-    chmod 755 /run/mysqld
-
-# Copiar script de configuración
-COPY tools/mariadb_conf.sh /usr/local/bin/mariadb_conf.sh
+RUN mkdir -p /var/lib/mysql /run/mysqld /etc/mysql
+COPY conf/my.cnf /etc/mysql/my.cnf
+COPY tools/mariadb_conf.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/mariadb_conf.sh
 
 # Puerto de MariaDB

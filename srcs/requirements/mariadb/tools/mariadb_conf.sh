@@ -6,8 +6,7 @@ echo "🔧 Configurando MariaDB..."
 
 # Crear directorios necesarios
 mkdir -p /run/mysqld
-chown -R mysql:mysql /var/lib/mysql
-chown -R mysql:mysql /run/mysqld
+chown -R mysql:mysql /var/lib/mysql /run/mysqld
 
 # Inicializar si es necesario
 if [ ! -d "/var/lib/mysql/mysql" ]; then
@@ -45,4 +44,4 @@ fi
 
 echo "🎯 Iniciando MariaDB..."
 # Iniciar MariaDB forzando puerto 3306 y bind address
-exec mysqld --user=mysql --port=3306 --bind-address=0.0.0.0 --socket=/run/mysqld/mysqld.sock
+exec mysqld --defaults-file=/etc/mysql/my.cnf

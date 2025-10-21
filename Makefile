@@ -6,7 +6,7 @@
 #    By: sadoming <sadoming@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/10/14 17:25:36 by sadoming          #+#    #+#              #
-#    Updated: 2025/10/20 20:06:09 by sadoming         ###   ########.fr        #
+#    Updated: 2025/10/21 11:54:27 by sadoming         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -140,6 +140,7 @@ clear: fclean
 	@clear
 
 volclean: fclean
+	@docker volume prune -f
 	@docker builder prune
 	@docker system prune -a
 

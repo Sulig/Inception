@@ -1,22 +1,25 @@
 # srcs/requirements/mariadb/Dockerfile
-FROM debian:12
+FROM alpine:3.18
 
-ENV DEBIAN_FRONTEND=noninteractive
+RUN apk update && apk add --no-cache \
+    mariadb \
+    mariadb-client \
+    su-exec
 
-# Instalar mariadb (cliente + server)
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends mariadb-server mariadb-client ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+# Crear directorio para la base de datos
+RUN mkdir -p /var/lib/mysql
+RUN chown -R mysql:mysql /var/lib/mysql
+RUN chmod 755 /var/lib/mysql
 
-# Crear directorio de datos y asignar permisos
-RUN mkdir -p /var/lib/mysql && chown -R mysql:mysql /var/lib/mysql
-
-# Copiar entrypoint desde el subdirectorio tools
-COPY tools/mariadb_conf.sh /usr/local/bin/
+# Copiar script de configuración
+COPY tools/mariadb_conf.sh /usr/local/bin/mariadb_conf.sh
 RUN chmod +x /usr/local/bin/mariadb_conf.sh
 
+# Puerto de MariaDB
 EXPOSE 3306
+
+# Volumen para persistencia
 VOLUME /var/lib/mysql
 
+# Usar el script de configuración como entrypoint
 ENTRYPOINT ["/usr/local/bin/mariadb_conf.sh"]
-CMD ["mysqld"]

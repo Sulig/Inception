@@ -1,4 +1,3 @@
-# srcs/requirements/wordpress/Dockerfile
 FROM alpine:3.18
 
 RUN apk update && apk add --no-cache \
@@ -14,8 +13,11 @@ RUN apk update && apk add --no-cache \
     php81-openssl \
     php81-xml \
     php81-zip \
+    php81-phar \
+    php81-tokenizer \
     wget \
-    mariadb-client  # ← AÑADIR ESTO
+    mariadb-client \
+    curl
 
 # Crear directorios necesarios
 RUN mkdir -p /var/www/html && \
@@ -28,11 +30,12 @@ RUN wget https://wordpress.org/latest.tar.gz -O /tmp/wordpress.tar.gz && \
     rm -rf /tmp/wordpress* && \
     chown -R nobody:nobody /var/www/html
 
-# Configurar PHP-FPM para escuchar en todas las interfaces
+# Configurar PHP-FPM
 RUN sed -i 's/listen = 127.0.0.1:9000/listen = 0.0.0.0:9000/g' /etc/php81/php-fpm.d/www.conf && \
-    sed -i 's/;daemonize = yes/daemonize = no/g' /etc/php81/php-fpm.conf
+    sed -i 's/;daemonize = yes/daemonize = no/g' /etc/php81/php-fpm.conf && \
+    echo "clear_env = no" >> /etc/php81/php-fpm.d/www.conf
 
-# Script de configuración simple
+# Script de configuración
 COPY tools/configure.sh /configure.sh
 RUN chmod +x /configure.sh
 

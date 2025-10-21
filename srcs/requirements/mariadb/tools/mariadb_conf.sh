@@ -48,5 +48,5 @@ EOSQL
 fi
 
 echo "🎯 Iniciando MariaDB definitivamente..."
-# Ejecutar como usuario mysql escuchando en red
-exec su-exec mysql mysqld --datadir="$DATADIR" --socket="$SOCKETDIR/mysqld.sock" --port=3306 --bind-address=0.0.0.0
+# Ejecutar como usuario mysql escuchando en red - FORZAR puerto 3306
+exec su-exec mysql mysqld --datadir="$DATADIR" --port=3306 --bind-address=0.0.0.0 --socket="$SOCKETDIR/mysqld.sock"

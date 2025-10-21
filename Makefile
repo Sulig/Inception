@@ -6,7 +6,7 @@
 #    By: sadoming <sadoming@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/10/14 17:25:36 by sadoming          #+#    #+#              #
-#    Updated: 2025/10/16 19:10:32 by sadoming         ###   ########.fr        #
+#    Updated: 2025/10/21 12:09:29 by sadoming         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -62,33 +62,33 @@ help:
 # ******************************************************************************* #
 setup:
 	@echo "$(B)=== Configuring Inception ===$(DEF)"
+	@mkdir -p $(DATA_PATH)/mariadb
 	@mkdir -p $(DATA_PATH)/wordpress
-	@mkdir -p $(DATA_PATH)/nginx
-	@mkdir -p $(DATA_PATH)/nginx/{certs,conf}
+	@chmod 755 $(DATA_PATH)
 	@echo "$(G)✓ Dirs created$(DEF)"
 	@if [ ! -f ./srcs/.env ]; then \
 		echo "$(Y)⚠ Creating .env using the template$(DEF)"; \
-		cp ./srcs/.env.example ./srcs/.env 2>/dev/null || echo "$(R)✗ Template '.env.example' not found!$(DEF)"; \
+		cp ./srcs/.env.template ./srcs/.env 2>/dev/null || echo "$(R)✗ Template '.env.template' not found!$(DEF)"; \
 	fi
 
 # Building Comands:
 build:
-	@echo "$(B)=== Building Docker imgs ===$(RESET)"
+	@echo "$(B)=== Building Docker imgs ===$(DEF)"
 	@cd srcs && $(COMPOSE) build
-	@echo "$(G)✓ Builded correctly!$(RESET)"
+	@echo "$(G)✓ Builded correctly!$(DEF)"
 
 up:
-	@echo "$(B)=== Starting services ===$(RESET)"
+	@echo "$(B)=== Starting services ===$(DEF)"
 	@cd srcs && $(COMPOSE) up -d
-	@echo "$(G)✓ Services started!$(RESET)"
+	@echo "$(G)✓ Services started!$(DEF)"
 
 up-debug:
 	@cd srcs && $(COMPOSE) up
 
 down:
-	@echo "$(Y)=== Stoping services ===$(RESET)"
+	@echo "$(Y)=== Stoping services ===$(DEF)"
 	@cd srcs && $(COMPOSE) down
-	@echo "$(G)✓ Services stoped$(RESET)"
+	@echo "$(G)✓ Services stoped$(DEF)"
 
 re: down up
 
@@ -105,41 +105,52 @@ wordpress: build
 nginx: build
 	@cd srcs && $(COMPOSE) up -d nginx
 #--------------------
-# Other Comands:
+# Status and Debug commands:
 ps:
 	@cd srcs && $(COMPOSE) ps
 
 status:
-	@echo "$(B)=== Service Status ===$(RESET)"
+	@echo "$(B)=== Service Status ===$(DEF)"
 	@cd srcs && $(COMPOSE) ps
 	@echo ""
-	@echo "$(B)=== Volumes ===$(RESET)"
+	@echo "$(B)=== Volumes ===$(DEF)"
 	@docker volume ls | grep srcs_ || echo "No volumes!"
 	@echo ""
-	@echo "$(B)=== Network ===$(RESET)"
+	@echo "$(B)=== Network ===$(DEF)"
 	@docker network ls | grep srcs_ || echo "No network!"
 
 check:
-	@echo "$(B)=== Checking config ===$(RESET)"
+	@echo "$(B)=== Checking config ===$(DEF)"
 	@cd srcs && $(COMPOSE) config
+
+logs:
+	@cd srcs && docker logs mariadb
+	@cd srcs && docker logs wordpress
+	@cd srcs && docker logs nginx
 # ********************************************************************************* #
 # Clean region
 clean: down
-	@echo "$(Y)=== Cleaning containers ===$(RESET)"
+	@echo "$(Y)=== Cleaning containers ===$(DEF)"
 	@docker rm -f $(shell docker ps -aq) 2>/dev/null || true
-	@echo "$(G)✓ Containers cleaned$(RESET)"
+	@echo "$(G)✓ Containers cleaned$(DEF)"
 
 # Limpiar contenederos e imágenes
 fclean: clean
-	@echo "$(Y)=== Cleaning images ===$(RESET)"
+	@echo "$(Y)=== Cleaning images ===$(DEF)"
 	@docker rmi -f $(shell docker images -q) 2>/dev/null || true
-	@echo "$(G)✓ Images cleaned$(RESET)"
+	@sudo rm -rf $(DATA_PATH)
+	@echo "$(G)✓ Images cleaned$(DEF)"
 
 clear: fclean
 	@clear
 
-reset: down fclean volclean
-	@echo "$(G)✓ Successfull reset$(RESET)"
+volclean: fclean
+	@docker volume prune -f
+	@docker builder prune
+	@docker system prune -a
+
+DEF: down fclean volclean
+	@echo "$(G)✓ Successfull DEF$(DEF)"
 # -------------------- #
-.PHONY: all setup build up up-debug down re reload logs status exec clean fclean volclean reset check help
+.PHONY: all setup build up up-debug down re reload logs status exec clean fclean volclean DEF check help
 # ********************************************************************************** #

@@ -2,6 +2,7 @@ services:
 
   mariadb:
     build: ./requirements/mariadb
+    image: mariadb
     container_name: mariadb
     restart: unless-stopped
     networks:
@@ -9,16 +10,17 @@ services:
     env_file:
       - .env
     environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - mariadb_data:/var/lib/mysql
 
 
   wordpress:
     build: ./requirements/wordpress
+    image: wordpress
     container_name: wordpress
     restart: unless-stopped
     depends_on:
@@ -28,19 +30,16 @@ services:
     env_file:
       - .env
     environment:
-      - WORDPRESS_DB_HOST=mariadb
-      - WORDPRESS_DB_USER=${MYSQL_USER}
-      - WORDPRESS_DB_PASSWORD=${MYSQL_PASSWORD}
-      - WORDPRESS_DB_NAME=${MYSQL_DATABASE}
-      - WP_ADMIN_USER=${WP_ADMIN_USER}
-      - WP_ADMIN_PASSWORD=${WP_ADMIN_PASSWORD}
-      - WP_ADMIN_EMAIL=${WP_ADMIN_EMAIL}
-      - DOMAIN_NAME=${DOMAIN_NAME}
+       WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
+       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
+       WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
+       WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
     volumes:
       - wordpress_data:/var/www/html
 
   nginx:
     build: ./requirements/nginx
+    image: nginx
     container_name: nginx
     restart: unless-stopped
     depends_on:
@@ -52,20 +51,26 @@ services:
     env_file:
       - .env
     environment:
-      - DOMAIN_NAME=${DOMAIN_NAME}
+      DOMAIN_NAME: ${DOMAIN_NAME}
     volumes:
-      - wordpress_data:/var/www/html:ro
-      - nginx_ssl:/etc/nginx/ssl
-
-
-volumes:
-
-  mariadb_data:
-  wordpress_data:
-  nginx_ssl:
+      - wordpress_data:/var/www/html
 
 networks:
   inception:
     driver: bridge
 
-#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+volumes:
+  mariadb_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/sadoming/data/mariadb
+  wordpress_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/sadoming/data/wordpress
+
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\

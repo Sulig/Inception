@@ -6,7 +6,7 @@
 #    By: sadoming <sadoming@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/10/14 17:25:36 by sadoming          #+#    #+#              #
-#    Updated: 2025/10/21 11:54:27 by sadoming         ###   ########.fr        #
+#    Updated: 2025/10/21 12:09:29 by sadoming         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -105,7 +105,7 @@ wordpress: build
 nginx: build
 	@cd srcs && $(COMPOSE) up -d nginx
 #--------------------
-# Other Comands:
+# Status and Debug commands:
 ps:
 	@cd srcs && $(COMPOSE) ps
 
@@ -122,6 +122,11 @@ status:
 check:
 	@echo "$(B)=== Checking config ===$(DEF)"
 	@cd srcs && $(COMPOSE) config
+
+logs:
+	@cd srcs && docker logs mariadb
+	@cd srcs && docker logs wordpress
+	@cd srcs && docker logs nginx
 # ********************************************************************************* #
 # Clean region
 clean: down

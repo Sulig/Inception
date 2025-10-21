@@ -6,10 +6,15 @@ RUN apk update && apk add --no-cache \
     mariadb-client \
     su-exec
 
-# Crear directorio para la base de datos
-RUN mkdir -p /var/lib/mysql
-RUN chown -R mysql:mysql /var/lib/mysql
-RUN chmod 755 /var/lib/mysql
+# Crear directorios necesarios
+RUN mkdir -p /var/lib/mysql && \
+    mkdir -p /run/mysqld
+
+# Configurar permisos
+RUN chown -R mysql:mysql /var/lib/mysql && \
+    chown -R mysql:mysql /run/mysqld && \
+    chmod 755 /var/lib/mysql && \
+    chmod 755 /run/mysqld
 
 # Copiar script de configuración
 COPY tools/mariadb_conf.sh /usr/local/bin/mariadb_conf.sh

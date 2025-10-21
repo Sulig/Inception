@@ -38,7 +38,7 @@ RUN mkdir -p /var/www/html && \
     mkdir -p /var/run/php
 
 # Descargar WordPress
-RUN wget https://wordpress.org/latest.tar.gz -O /tmp/wordpress.tar.gz && \
+RUN wget https://wordpress.org/wordpress-6.5.2.tar.gz -O /tmp/wordpress.tar.gz && \
     tar -xzf /tmp/wordpress.tar.gz -C /tmp && \
     cp -r /tmp/wordpress/* /var/www/html/ && \
     rm -rf /tmp/wordpress* && \

@@ -1,10 +1,9 @@
 #!/bin/sh
-# srcs/requirements/wordpress/tools/configure.sh
 set -e
 
 echo "🎯 Configurando WordPress..."
 
-# Esperar a que MariaDB esté realmente listo (más robusto)
+# Esperar a que MariaDB esté realmente listo
 echo "⏳ Esperando a MariaDB..."
 timeout=60
 while ! mysql -h mariadb -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} -e "SELECT 1;" ${WORDPRESS_DB_NAME} 2>/dev/null; do
@@ -12,10 +11,6 @@ while ! mysql -h mariadb -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} -e "
   timeout=$((timeout - 2))
   if [ $timeout -le 0 ]; then
     echo "❌ No se puede conectar a MariaDB después de 60 segundos"
-    echo "🔍 Verificando variables:"
-    echo "DB_HOST: mariadb"
-    echo "DB_USER: ${WORDPRESS_DB_USER}"
-    echo "DB_NAME: ${WORDPRESS_DB_NAME}"
     exit 1
   fi
   echo "⏰ Esperando conexión a MariaDB... ($timeout segundos restantes)"
@@ -26,38 +21,41 @@ echo "✅ Conectado a MariaDB"
 if [ ! -f "/var/www/html/wp-config.php" ]; then
     echo "📝 Creando wp-config.php..."
 
-    cat > /var/www/html/wp-config.php << EOF
-<?php
-define('DB_NAME', '${WORDPRESS_DB_NAME}');
-define('DB_USER', '${WORDPRESS_DB_USER}');
-define('DB_PASSWORD', '${WORDPRESS_DB_PASSWORD}');
-define('DB_HOST', 'mariadb');
-define('DB_CHARSET', 'utf8');
-define('DB_COLLATE', '');
-
-define('AUTH_KEY',         '$(openssl rand -base64 48)');
-define('SECURE_AUTH_KEY',  '$(openssl rand -base64 48)');
-define('LOGGED_IN_KEY',    '$(openssl rand -base64 48)');
-define('NONCE_KEY',        '$(openssl rand -base64 48)');
-define('AUTH_SALT',        '$(openssl rand -base64 48)');
-define('SECURE_AUTH_SALT', '$(openssl rand -base64 48)');
-define('LOGGED_IN_SALT',   '$(openssl rand -base64 48)');
-define('NONCE_SALT',       '$(openssl rand -base64 48)');
-
-\$table_prefix = 'wp_';
-define('WP_DEBUG', false);
-
-if ( ! defined('ABSPATH') ) {
-    define('ABSPATH', __DIR__ . '/');
-}
-
-require_once ABSPATH . 'wp-settings.php';
-EOF
+    # Usar WP-CLI para crear la configuración
+    su-exec nobody:nobody /usr/local/bin/wp config create \
+        --dbname=${WORDPRESS_DB_NAME} \
+        --dbuser=${WORDPRESS_DB_USER} \
+        --dbpass=${WORDPRESS_DB_PASSWORD} \
+        --dbhost=mariadb \
+        --locale=es_ES \
+        --path=/var/www/html \
+        --skip-check
 
     echo "✅ wp-config.php creado"
 else
     echo "✅ wp-config.php ya existe"
 fi
+
+# Instalar WordPress si no está instalado
+if ! su-exec nobody:nobody /usr/local/bin/wp core is-installed --path=/var/www/html; then
+    echo "📀 Instalando WordPress..."
+
+    su-exec nobody:nobody /usr/local/bin/wp core install \
+        --url=https://${DOMAIN_NAME} \
+        --title="Inception Project" \
+        --admin_user=${WORDPRESS_ADMIN_USER} \
+        --admin_password=${WORDPRESS_ADMIN_PASSWORD} \
+        --admin_email=${WORDPRESS_ADMIN_EMAIL} \
+        --path=/var/www/html \
+        --skip-email
+
+    echo "✅ WordPress instalado automáticamente"
+else
+    echo "✅ WordPress ya está instalado"
+fi
+
+# Configurar idioma español
+su-exec nobody:nobody /usr/local/bin/wp language core install es_ES --path=/var/www/html --activate
 
 # Configurar permisos
 chown -R nobody:nobody /var/www/html

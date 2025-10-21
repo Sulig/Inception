@@ -8,7 +8,7 @@ RUN apt update \
 
 #Copy configuration
 COPY conf/mariadb.conf /etc/mysql/my.cnf
-COPY tools/configure.sh   /usr/local/bin/configure.sh
+COPY tools/mariadb_conf.sh   /usr/local/bin/configure.sh
 RUN chmod +x /usr/local/bin/configure.sh
 
 RUN mkdir -p /var/run/mysqld /var/lib/mysql && \

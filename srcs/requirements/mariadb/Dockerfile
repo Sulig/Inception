@@ -1,24 +1,24 @@
-# srcs/requirements/mariadb/Dockerfile
-FROM alpine:3.18
+#Last Debian Stable
+FROM debian:bullseye
 
-RUN apk update && apk add --no-cache \
-    mariadb \
-    mariadb-client
+#Dowload MariaDB and update it to the last version
+RUN apt update \
+	&& apt install -y mariadb-server \
+	&& rm -rf /var/lib/apt/lists/*
 
-# Crear directorios necesarios
-RUN mkdir -p /var/lib/mysql /run/mysqld /etc/mysql
+#Copy configuration
+COPY conf/mariadb.conf /etc/mysql/my.cnf
+COPY tools/configure.sh   /usr/local/bin/configure.sh
+RUN chmod +x /usr/local/bin/configure.sh
 
-# Copiar archivo de configuración
-COPY conf/my.cnf /etc/mysql/my.cnf
+RUN mkdir -p /var/run/mysqld /var/lib/mysql && \
+    chown -R mysql:mysql /var/run/mysqld /var/lib/mysql
 
-# Copiar script de configuración
-COPY tools/mariadb_conf.sh /usr/local/bin/mariadb_conf.sh
-RUN chmod +x /usr/local/bin/mariadb_conf.sh
-
-# Configurar permisos
-RUN chown -R mysql:mysql /var/lib/mysql /run/mysqld
-
-EXPOSE 3306
 VOLUME /var/lib/mysql
 
-ENTRYPOINT ["/usr/local/bin/mariadb_conf.sh"]
+#MariaDB Port
+EXPOSE 3306
+
+#Execute
+ENTRYPOINT ["/usr/local/bin/configure.sh"]
+CMD ["mysqld"]

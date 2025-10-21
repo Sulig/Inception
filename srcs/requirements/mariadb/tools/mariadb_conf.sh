@@ -1,47 +1,51 @@
-#!/bin/sh
-# srcs/requirements/mariadb/tools/mariadb_conf.sh
-set -e
+#!/bin/bash
+set -eux
 
-echo "🔧 Configurando MariaDB..."
+# Variables de entorno obligatorias:
+#   MYSQL_ROOT_PASSWORD, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD
 
-# Crear directorios necesarios
-mkdir -p /run/mysqld
-chown -R mysql:mysql /var/lib/mysql /run/mysqld
+# 1) Preparar directorio de datos
+DATADIR=/var/lib/mysql
+chown -R mysql:mysql "$DATADIR"
 
-# Inicializar si es necesario
-if [ ! -d "/var/lib/mysql/mysql" ]; then
-    echo "🚀 Inicializando base de datos..."
-    mysql_install_db --user=mysql --datadir=/var/lib/mysql
-
-    # Configuración inicial
-    echo "📝 Iniciando servidor temporal..."
-    mysqld_safe --skip-grant-tables --socket=/run/mysqld/mysqld.sock &
-    pid="$!"
-    sleep 15
-
-    echo "👤 Configurando usuarios y permisos..."
-    # Comandos actualizados para MariaDB 10.11
-    mysql -S /run/mysqld/mysqld.sock -uroot <<-EOSQL
-        FLUSH PRIVILEGES;
-        -- Configurar password root
-        ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
-
-        -- Crear base de datos y usuario para WordPress
-        CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
-        CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
-        GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
-
-        FLUSH PRIVILEGES;
-EOSQL
-
-    echo "✅ Base de datos configurada correctamente"
-
-    # Detener servidor temporal
-    mysqladmin -S /run/mysqld/mysqld.sock -uroot -p"${MYSQL_ROOT_PASSWORD}" shutdown
-    wait "$pid" 2>/dev/null || true
-    sleep 5
+# 2) Inicializar datos si hace falta
+if [ ! -d "$DATADIR/mysql" ]; then
+  echo "=> Inicializando datos de MariaDB..."
+  mysql_install_db --user=mysql --datadir="$DATADIR"
 fi
 
-echo "🎯 Iniciando MariaDB..."
-# Iniciar MariaDB forzando puerto 3306 y bind address
-exec mysqld --defaults-file=/etc/mysql/my.cnf
+# 3) Arrancar servidor temporal en background (con TCP, sin --skip-networking)
+echo "=> Arrancando servidor temporal..."
+mysqld_safe --datadir="$DATADIR" &
+pid="$!"
+
+# 4) Esperar hasta que acepte conexiones
+echo "=> Esperando a que MariaDB esté lista..."
+timeout=30
+while ! mysqladmin ping --silent --protocol=TCP; do
+  sleep 1
+  timeout=$((timeout - 1))
+  if [ $timeout -le 0 ]; then
+    echo "¡¡No arranca MariaDB temporal!!"
+    exit 1
+  fi
+done
+
+# 5) Configurar contraseñas y usuarios
+echo "=> Configurando root y base de datos..."
+mysql <<-EOSQL
+  ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
+  CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
+  CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+  GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
+  FLUSH PRIVILEGES;
+EOSQL
+
+# 6) Parar servidor temporal
+echo "=> Deteniendo servidor temporal..."
+kill "$pid"
+wait "$pid"
+
+# 7) Finalmente, arranca el demonio definitivo (reemplaza el proceso actual)
+echo "=> Arrancando servidor final de MariaDB..."
+exec mysqld --user=mysql --datadir="$DATADIR"

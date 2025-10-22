@@ -1,84 +1,84 @@
 #!/bin/sh
 set -e
 
-echo "🎯 Configurando WordPress..."
+echo "-- Configuring WordPress..."
 
-# Verificar si podemos resolver el hostname 'mariadb'
-echo "🔍 Verificando resolución DNS..."
+# Check if we can resolve the hostname 'mariadb'
+echo "* Checking DNS resolution..."
 if ping -c 1 mariadb &> /dev/null; then
-    echo "✅ DNS resuelve correctamente"
+    echo "✅ DNS resolves correctly"
 else
-    echo "❌ No se puede resolver 'mariadb'"
-    echo "📋 Información de red:"
+    echo "❌ Cannot resolve 'mariadb'"
+    echo "~~ Network information:"
     cat /etc/hosts
     exit 1
 fi
 
-# Esperar a que MariaDB esté listo con mejor diagnóstico
-echo "⏳ Esperando a MariaDB..."
+# Wait for MariaDB to be ready with diagnostics
+echo "⏳ Waiting for MariaDB..."
 timeout=90
 while ! mysql -h mariadb -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} -e "SELECT 1;" ${WORDPRESS_DB_NAME} 2>/dev/null; do
   sleep 3
   timeout=$((timeout - 3))
   if [ $timeout -le 0 ]; then
-    echo "❌ No se puede conectar a MariaDB después de 90 segundos"
+    echo "❌ Unable to connect to MariaDB after 90 seconds"
 
-    # Diagnóstico adicional
-    echo "🔍 Diagnóstico de conectividad:"
-    echo "   - Probando conexión TCP a mariadb:3306..."
+    # Additional diagnosis
+    echo "~~ Connectivity Diagnostics:"
+    echo "   - Testing TCP connection to mariadb:3306..."
     if nc -z mariadb 3306 &> /dev/null; then
-        echo "   ✅ Puerto 3306 está abierto"
+        echo "   ✅ Port 3306 is open"
     else
-        echo "   ❌ No se puede conectar al puerto 3306"
+        echo "   ❌ Unable to connect to port 3306"
     fi
 
-    echo "   - Verificando credenciales..."
+    echo "   - Verifying credentials..."
     echo "     DB_HOST: mariadb"
     echo "     DB_USER: ${WORDPRESS_DB_USER}"
     echo "     DB_NAME: ${WORDPRESS_DB_NAME}"
 
-    # Intentar conectar sin base de datos específica
+    # Trying to connect without a specific database
     if mysql -h mariadb -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} -e "SELECT 1;" 2>/dev/null; then
-        echo "   ✅ Puede conectarse al servidor, pero no a la DB específica"
-        echo "   🔍 Verificando si la base de datos existe..."
+        echo "   ✅ Can connect to the server, but not to the specific DB"
+        echo "   ~~ Checking if the database exists..."
         if mysql -h mariadb -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} -e "SHOW DATABASES;" 2>/dev/null | grep -q "${WORDPRESS_DB_NAME}"; then
-            echo "   ✅ La base de datos existe"
+            echo "   ✅ The database exists"
         else
-            echo "   ❌ La base de datos NO existe"
+            echo "   ❌ The database does NOT exist"
         fi
     else
-        echo "   ❌ No puede conectarse al servidor MariaDB"
+        echo "   ❌ Unable to connect to MariaDB server"
     fi
 
-    # Continuar de todos modos para ver si WordPress puede recuperarse
-    echo "🚨 Continuando a pesar del error..."
+    # Continue anyway to see if WordPress can recover
+    echo "** Continuing despite the error..."
     break
   fi
-  echo "⏰ Esperando conexión a MariaDB... ($timeout segundos restantes)"
+  echo "-* Waiting for connection to MariaDB... ($timeout seconds remaining)"
 done
 
-echo "✅ Conectado a MariaDB"
+echo "✅ Connected to MariaDB"
 
-# Continuar con la configuración normal de WordPress...
+# Continue with normal WordPress setup...
 if ! /usr/local/bin/wp core is-installed --path=/var/www/html 2>/dev/null; then
-    echo "📀 WordPress no está instalado, procediendo con configuración..."
+    echo "📀 WordPress is not installed, proceeding with setup..."
 
     if [ ! -f "/var/www/html/wp-config.php" ]; then
-        echo "📝 Creando wp-config.php..."
+        echo "-- Creating wp-config.php..."
         /usr/local/bin/wp config create \
             --dbname=${WORDPRESS_DB_NAME} \
             --dbuser=${WORDPRESS_DB_USER} \
             --dbpass=${WORDPRESS_DB_PASSWORD} \
             --dbhost=mariadb \
-            --locale=es_ES \
+            --locale=en_US \
             --path=/var/www/html \
             --skip-check
     fi
 
-    echo "🚀 Instalando WordPress..."
+    echo "🚀 Installing WordPress..."
     /usr/local/bin/wp core install \
         --url=https://${DOMAIN_NAME} \
-        --title="Inception Project" \
+        --title=${WORDPRESS_TITLE} \
         --admin_user=${WORDPRESS_ADMIN_USER} \
         --admin_password=${WORDPRESS_ADMIN_PASSWORD} \
         --admin_email=${WORDPRESS_ADMIN_EMAIL} \
@@ -86,13 +86,13 @@ if ! /usr/local/bin/wp core is-installed --path=/var/www/html 2>/dev/null; then
         --skip-email
 
     /usr/local/bin/wp language core install es_ES --path=/var/www/html --activate
-    echo "✅ WordPress instalado y configurado"
+    echo "✅ WordPress installed and configured"
 else
-    echo "✅ WordPress ya está instalado, saltando configuración"
+    echo "✅ WordPress is already installed, skipping configuration"
 fi
 
 chown -R nobody:nobody /var/www/html
 chmod -R 755 /var/www/html
 
-echo "🚀 Iniciando PHP-FPM..."
+echo "🚀 Starting PHP-FPM..."
 exec php-fpm81 -F

@@ -20,39 +20,39 @@ RUN apk update && apk add --no-cache \
     wget \
     mariadb-client \
     curl \
-	su-exec \
+    su-exec \
     shadow \
-	netcat-openbsd \
+    netcat-openbsd \
     iputils \
     bind-tools
 
-# Instalar WP-CLI (versión más estable)
+# Install WP-CLI (most stable version)
 RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && \
     chmod +x wp-cli.phar && \
     mv wp-cli.phar /usr/local/bin/wp
 
-# Crear un wrapper para WP-CLI que use el usuario correcto
+# Create a wrapper for WP-CLI that uses the correct user
 RUN echo '#!/bin/sh' > /usr/local/bin/wp-cli && \
     echo 'su-exec nobody:nobody /usr/local/bin/wp "$@" --path=/var/www/html' >> /usr/local/bin/wp-cli && \
     chmod +x /usr/local/bin/wp-cli
 
-# Crear directorios necesarios
+# Create necessary directories
 RUN mkdir -p /var/www/html && \
     mkdir -p /var/run/php
 
-# Descargar WordPress
+# Download WordPress
 RUN wget https://wordpress.org/wordpress-6.5.2.tar.gz -O /tmp/wordpress.tar.gz && \
     tar -xzf /tmp/wordpress.tar.gz -C /tmp && \
     cp -r /tmp/wordpress/* /var/www/html/ && \
     rm -rf /tmp/wordpress* && \
     chown -R nobody:nobody /var/www/html
 
-# Configurar PHP-FPM para escuchar en todas las interfaces
+# Configure PHP-FPM to listen on all interfaces
 RUN sed -i 's/listen = 127.0.0.1:9000/listen = 0.0.0.0:9000/g' /etc/php81/php-fpm.d/www.conf && \
     sed -i 's/;daemonize = yes/daemonize = no/g' /etc/php81/php-fpm.conf && \
     echo "clear_env = no" >> /etc/php81/php-fpm.d/www.conf
 
-# Script de configuración
+# Configuration script
 COPY tools/configure.sh /configure.sh
 RUN chmod +x /configure.sh
 

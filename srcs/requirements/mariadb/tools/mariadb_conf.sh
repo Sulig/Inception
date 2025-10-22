@@ -30,13 +30,24 @@ if [ ! -d "$DATADIR/mysql" ]; then
         fi
     done
 
-    # 5) Configurar contraseñas y usuarios SOLO en primera ejecución
+    # 5) Configurar contraseñas y usuarios (LOCAL + REMOTO)
     echo "=> Configurando root y base de datos..."
     mysql <<-EOSQL
         ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
+
+        -- Crear base de datos
         CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
+
+        -- Crear usuario para conexiones LOCALES
+        CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'localhost' IDENTIFIED BY '${MYSQL_PASSWORD}';
+
+        -- Crear usuario para conexiones REMOTAS (desde cualquier host)
         CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+
+        -- Dar privilegios a ambos usuarios
+        GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'localhost';
         GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
+
         FLUSH PRIVILEGES;
 EOSQL
 
@@ -47,7 +58,34 @@ EOSQL
 
     echo "✅ Configuración inicial completada"
 else
-    echo "✅ Base de datos ya existe, saltando configuración inicial"
+    echo "✅ Base de datos ya existe, asegurando que el usuario remoto existe..."
+
+    # Arrancar temporalmente para crear usuario remoto si falta
+    mysqld_safe --datadir="$DATADIR" &
+    pid="$!"
+
+    # Esperar a que MariaDB esté lista
+    timeout=30
+    while ! mysqladmin ping --silent --protocol=TCP -uroot -p${MYSQL_ROOT_PASSWORD}; do
+        sleep 1
+        timeout=$((timeout - 1))
+        if [ $timeout -le 0 ]; then
+            echo "¡¡No arranca MariaDB temporal!!"
+            exit 1
+        fi
+    done
+
+    # Asegurar que existe el usuario remoto
+    mysql -uroot -p${MYSQL_ROOT_PASSWORD} <<-EOSQL
+        CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
+        CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+        GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
+        FLUSH PRIVILEGES;
+EOSQL
+
+    # Parar servidor temporal
+    kill "$pid"
+    wait "$pid"
 fi
 
 # 7) Finalmente, arranca el demonio definitivo

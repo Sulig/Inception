@@ -1,22 +1,22 @@
-FROM alpine:3.18
+FROM alpine:3.21
 
 RUN apk update && apk add --no-cache \
-    php81 \
-    php81-fpm \
-    php81-mysqli \
-    php81-json \
-    php81-curl \
-    php81-dom \
-    php81-exif \
-    php81-fileinfo \
-    php81-mbstring \
-    php81-openssl \
-    php81-xml \
-    php81-zip \
-    php81-phar \
-    php81-ctype \
-    php81-tokenizer \
-    php81-simplexml \
+    php83 \
+    php83-fpm \
+    php83-mysqli \
+    php83-json \
+    php83-curl \
+    php83-dom \
+    php83-exif \
+    php83-fileinfo \
+    php83-mbstring \
+    php83-openssl \
+    php83-xml \
+    php83-zip \
+    php83-phar \
+    php83-ctype \
+    php83-tokenizer \
+    php83-simplexml \
     wget \
     mariadb-client \
     curl \
@@ -48,9 +48,9 @@ RUN wget https://wordpress.org/wordpress-6.5.2.tar.gz -O /tmp/wordpress.tar.gz &
     chown -R nobody:nobody /var/www/html
 
 # Configure PHP-FPM to listen on all interfaces
-RUN sed -i 's/listen = 127.0.0.1:9000/listen = 0.0.0.0:9000/g' /etc/php81/php-fpm.d/www.conf && \
-    sed -i 's/;daemonize = yes/daemonize = no/g' /etc/php81/php-fpm.conf && \
-    echo "clear_env = no" >> /etc/php81/php-fpm.d/www.conf
+RUN sed -i 's/listen = 127.0.0.1:9000/listen = 0.0.0.0:9000/g' /etc/php83/php-fpm.d/www.conf && \
+    sed -i 's/;daemonize = yes/daemonize = no/g' /etc/php83/php-fpm.conf && \
+    echo "clear_env = no" >> /etc/php83/php-fpm.d/www.conf
 
 # Configuration script
 COPY tools/configure.sh /configure.sh

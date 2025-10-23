@@ -85,7 +85,7 @@ if ! /usr/local/bin/wp core is-installed --path=/var/www/html 2>/dev/null; then
         --path=/var/www/html \
         --skip-email
 
-    /usr/local/bin/wp language core install es_ES --path=/var/www/html --activate
+    /usr/local/bin/wp language core install en_US --path=/var/www/html --activate
     echo "✅ WordPress installed and configured"
 else
     echo "✅ WordPress is already installed, skipping configuration"
@@ -95,4 +95,4 @@ chown -R nobody:nobody /var/www/html
 chmod -R 755 /var/www/html
 
 echo "🚀 Starting PHP-FPM..."
-exec php-fpm81 -F
+exec php-fpm83 -F

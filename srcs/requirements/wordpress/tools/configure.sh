@@ -5,7 +5,7 @@ echo "-- Configuring WordPress..."
 
 # Check if we can resolve the hostname 'mariadb'
 echo "* Checking DNS resolution..."
-if ping -c 1 mariadb &> /dev/null; then
+if ping -c 1 mariadb >/dev/null 2>&1; then
     echo "✅ DNS resolves correctly"
 else
     echo "❌ Cannot resolve 'mariadb'"
@@ -14,10 +14,17 @@ else
     exit 1
 fi
 
-# Wait for MariaDB to be ready with diagnostics
+# Configure PHP-FPM (Debian paths for PHP 8.3)
+if [ -f /etc/php/8.3/fpm/pool.d/www.conf ]; then
+  sed -i 's/listen = 127.0.0.1:9000/listen = 0.0.0.0:9000/g' /etc/php/8.3/fpm/pool.d/www.conf || true
+  sed -i 's/;daemonize = yes/daemonize = no/g' /etc/php/8.3/fpm/php-fpm.conf || true
+  grep -q "^clear_env" /etc/php/8.3/fpm/pool.d/www.conf || echo "clear_env = no" >> /etc/php/8.3/fpm/pool.d/www.conf
+fi
+
+# Wait for Mariadb with diagnostic
 echo "⏳ Waiting for MariaDB..."
 timeout=90
-while ! mysql -h mariadb -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} -e "SELECT 1;" ${WORDPRESS_DB_NAME} 2>/dev/null; do
+while ! mysql -h mariadb -u "${WORDPRESS_DB_USER}" -p"${WORDPRESS_DB_PASSWORD}" -e "SELECT 1;" "${WORDPRESS_DB_NAME}" >/dev/null 2>&1; do
   sleep 3
   timeout=$((timeout - 3))
   if [ $timeout -le 0 ]; then
@@ -26,7 +33,7 @@ while ! mysql -h mariadb -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} -e "
     # Additional diagnosis
     echo "~~ Connectivity Diagnostics:"
     echo "   - Testing TCP connection to mariadb:3306..."
-    if nc -z mariadb 3306 &> /dev/null; then
+    if nc -z mariadb 3306 >/dev/null 2>&1; then
         echo "   ✅ Port 3306 is open"
     else
         echo "   ❌ Unable to connect to port 3306"
@@ -38,10 +45,10 @@ while ! mysql -h mariadb -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} -e "
     echo "     DB_NAME: ${WORDPRESS_DB_NAME}"
 
     # Trying to connect without a specific database
-    if mysql -h mariadb -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} -e "SELECT 1;" 2>/dev/null; then
+    if mysql -h mariadb -u "${WORDPRESS_DB_USER}" -p"${WORDPRESS_DB_PASSWORD}" -e "SELECT 1;" >/dev/null 2>&1; then
         echo "   ✅ Can connect to the server, but not to the specific DB"
         echo "   ~~ Checking if the database exists..."
-        if mysql -h mariadb -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} -e "SHOW DATABASES;" 2>/dev/null | grep -q "${WORDPRESS_DB_NAME}"; then
+        if mysql -h mariadb -u "${WORDPRESS_DB_USER}" -p"${WORDPRESS_DB_PASSWORD}" -e "SHOW DATABASES;" 2>/dev/null | grep -q "${WORDPRESS_DB_NAME}"; then
             echo "   ✅ The database exists"
         else
             echo "   ❌ The database does NOT exist"
@@ -50,25 +57,24 @@ while ! mysql -h mariadb -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} -e "
         echo "   ❌ Unable to connect to MariaDB server"
     fi
 
-    # Continue anyway to see if WordPress can recover
     echo "** Continuing despite the error..."
     break
   fi
   echo "-* Waiting for connection to MariaDB... ($timeout seconds remaining)"
 done
 
-echo "✅ Connected to MariaDB"
+echo "✅ Connected to MariaDB (or continuing after diagnostics)"
 
-# Continue with normal WordPress setup...
+# WordPress setup with WP-CLI (wp-cli wrapper runs as www-data)
 if ! /usr/local/bin/wp core is-installed --path=/var/www/html 2>/dev/null; then
     echo "📀 WordPress is not installed, proceeding with setup..."
 
     if [ ! -f "/var/www/html/wp-config.php" ]; then
         echo "-- Creating wp-config.php..."
-        /usr/local/bin/wp config create \
-            --dbname=${WORDPRESS_DB_NAME} \
-            --dbuser=${WORDPRESS_DB_USER} \
-            --dbpass=${WORDPRESS_DB_PASSWORD} \
+        /usr/local/bin/wp-cli config create \
+            --dbname="${WORDPRESS_DB_NAME}" \
+            --dbuser="${WORDPRESS_DB_USER}" \
+            --dbpass="${WORDPRESS_DB_PASSWORD}" \
             --dbhost=mariadb \
             --locale=en_US \
             --path=/var/www/html \
@@ -76,23 +82,23 @@ if ! /usr/local/bin/wp core is-installed --path=/var/www/html 2>/dev/null; then
     fi
 
     echo "🚀 Installing WordPress..."
-    /usr/local/bin/wp core install \
-        --url=https://${DOMAIN_NAME} \
-        --title=${WORDPRESS_TITLE} \
-        --admin_user=${WORDPRESS_ADMIN_USER} \
-        --admin_password=${WORDPRESS_ADMIN_PASSWORD} \
-        --admin_email=${WORDPRESS_ADMIN_EMAIL} \
+    /usr/local/bin/wp-cli core install \
+        --url="https://${DOMAIN_NAME}" \
+        --title="${WORDPRESS_TITLE}" \
+        --admin_user="${WORDPRESS_ADMIN_USER}" \
+        --admin_password="${WORDPRESS_ADMIN_PASSWORD}" \
+        --admin_email="${WORDPRESS_ADMIN_EMAIL}" \
         --path=/var/www/html \
         --skip-email
 
-    /usr/local/bin/wp language core install en_US --path=/var/www/html --activate
+    /usr/local/bin/wp-cli language core install en_US --path=/var/www/html --activate
     echo "✅ WordPress installed and configured"
 else
     echo "✅ WordPress is already installed, skipping configuration"
 fi
 
-chown -R nobody:nobody /var/www/html
+chown -R www-data:www-data /var/www/html
 chmod -R 755 /var/www/html
 
 echo "🚀 Starting PHP-FPM..."
-exec php-fpm83 -F
+exec php-fpm8.3 -F

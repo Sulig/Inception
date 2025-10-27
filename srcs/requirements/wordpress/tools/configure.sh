@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 echo "-- Configuring WordPress..."
@@ -33,7 +33,7 @@ while ! mysql -h mariadb -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} -e "
     fi
 
     echo "   - Verifying credentials..."
-    echo "     DB_HOST: mariadb"
+    echo "     DB_HOST: ${WORDPRESS_DB_HOST}"
     echo "     DB_USER: ${WORDPRESS_DB_USER}"
     echo "     DB_NAME: ${WORDPRESS_DB_NAME}"
 
@@ -59,40 +59,54 @@ done
 
 echo "✅ Connected to MariaDB"
 
+# Switch to wpuser for WordPress operations
+echo "🔐 Switching to wpuser for WordPress operations..."
+
 # Continue with normal WordPress setup...
-if ! /usr/local/bin/wp core is-installed --path=/var/www/html 2>/dev/null; then
+if ! sudo -u wpuser /usr/local/bin/wp core is-installed --path=/var/www/html --allow-root 2>/dev/null; then
     echo "📀 WordPress is not installed, proceeding with setup..."
 
     if [ ! -f "/var/www/html/wp-config.php" ]; then
         echo "-- Creating wp-config.php..."
-        /usr/local/bin/wp config create \
+        sudo -u wpuser /usr/local/bin/wp config create \
             --dbname=${WORDPRESS_DB_NAME} \
             --dbuser=${WORDPRESS_DB_USER} \
             --dbpass=${WORDPRESS_DB_PASSWORD} \
-            --dbhost=mariadb \
+            --dbhost=${WORDPRESS_DB_HOST} \
             --locale=en_US \
             --path=/var/www/html \
-            --skip-check
+            --skip-check \
+            --allow-root
     fi
 
     echo "🚀 Installing WordPress..."
-    /usr/local/bin/wp core install \
+    sudo -u wpuser /usr/local/bin/wp core install \
         --url=https://${DOMAIN_NAME} \
         --title=${WORDPRESS_TITLE} \
         --admin_user=${WORDPRESS_ADMIN_USER} \
         --admin_password=${WORDPRESS_ADMIN_PASSWORD} \
         --admin_email=${WORDPRESS_ADMIN_EMAIL} \
         --path=/var/www/html \
-        --skip-email
+        --skip-email \
+        --allow-root
 
-    /usr/local/bin/wp language core install es_ES --path=/var/www/html --activate
+    sudo -u wpuser /usr/local/bin/wp language core install en_US --path=/var/www/html --activate --allow-root
     echo "✅ WordPress installed and configured"
 else
     echo "✅ WordPress is already installed, skipping configuration"
 fi
 
-chown -R nobody:nobody /var/www/html
+# Fix permissions (as root)
+chown -R wpuser:wpuser /var/www/html
 chmod -R 755 /var/www/html
+find /var/www/html -type d -exec chmod 755 {} \;
+find /var/www/html -type f -exec chmod 644 {} \;
+
+# Ensure PHP-FPM directories have proper permissions
+mkdir -p /var/run/php
+chown -R wpuser:wpuser /var/run/php
+chmod 755 /var/run/php
 
 echo "🚀 Starting PHP-FPM..."
-exec php-fpm81 -F
+# Start PHP-FPM as root - it will handle user switching internally
+exec php-fpm7.4 -F

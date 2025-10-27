@@ -1,56 +1,60 @@
-FROM alpine:3.18
+FROM debian:bullseye
 
-RUN apk update && apk add --no-cache \
-    php81 \
-    php81-fpm \
-    php81-mysqli \
-    php81-json \
-    php81-curl \
-    php81-dom \
-    php81-exif \
-    php81-fileinfo \
-    php81-mbstring \
-    php81-openssl \
-    php81-xml \
-    php81-zip \
-    php81-phar \
-    php81-ctype \
-    php81-tokenizer \
-    php81-simplexml \
+RUN apt-get update && apt-get install -y \
+    php-fpm \
+    php-mysql \
+    php-json \
+    php-curl \
+    php-dom \
+    php-exif \
+    php-fileinfo \
+    php-mbstring \
+    php-xml \
+    php-zip \
+    php-phar \
+    php-ctype \
+    php-tokenizer \
     wget \
     mariadb-client \
     curl \
-    su-exec \
-    shadow \
-    netcat-openbsd \
-    iputils \
-    bind-tools
+    iputils-ping \
+    netcat \
+    sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create WordPress user and group
+RUN groupadd -r wpuser && useradd -r -g wpuser -s /bin/bash -d /var/www/html wpuser
 
 # Install WP-CLI (most stable version)
 RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && \
     chmod +x wp-cli.phar && \
     mv wp-cli.phar /usr/local/bin/wp
 
-# Create a wrapper for WP-CLI that uses the correct user
-RUN echo '#!/bin/sh' > /usr/local/bin/wp-cli && \
-    echo 'su-exec nobody:nobody /usr/local/bin/wp "$@" --path=/var/www/html' >> /usr/local/bin/wp-cli && \
-    chmod +x /usr/local/bin/wp-cli
-
-# Create necessary directories
+# Create necessary directories with proper permissions
 RUN mkdir -p /var/www/html && \
-    mkdir -p /var/run/php
+    mkdir -p /var/run/php && \
+    mkdir -p /var/log/php7.4-fpm && \
+    chown -R wpuser:wpuser /var/www/html && \
+    chown -R wpuser:wpuser /var/log/php7.4-fpm
 
 # Download WordPress
 RUN wget https://wordpress.org/wordpress-6.5.2.tar.gz -O /tmp/wordpress.tar.gz && \
     tar -xzf /tmp/wordpress.tar.gz -C /tmp && \
     cp -r /tmp/wordpress/* /var/www/html/ && \
     rm -rf /tmp/wordpress* && \
-    chown -R nobody:nobody /var/www/html
+    chown -R wpuser:wpuser /var/www/html
 
-# Configure PHP-FPM to listen on all interfaces
-RUN sed -i 's/listen = 127.0.0.1:9000/listen = 0.0.0.0:9000/g' /etc/php81/php-fpm.d/www.conf && \
-    sed -i 's/;daemonize = yes/daemonize = no/g' /etc/php81/php-fpm.conf && \
-    echo "clear_env = no" >> /etc/php81/php-fpm.d/www.conf
+# Configure PHP-FPM to use wpuser and proper log paths
+RUN sed -i 's/^listen = \/run\/php\/php7.4-fpm.sock/listen = 0.0.0.0:9000/g' /etc/php/7.4/fpm/pool.d/www.conf && \
+    sed -i 's/^user = www-data/user = wpuser/g' /etc/php/7.4/fpm/pool.d/www.conf && \
+    sed -i 's/^group = www-data/group = wpuser/g' /etc/php/7.4/fpm/pool.d/www.conf && \
+    sed -i 's/;daemonize = yes/daemonize = no/g' /etc/php/7.4/fpm/php-fpm.conf && \
+    sed -i 's|^error_log = .*|error_log = /proc/self/fd/2|g' /etc/php/7.4/fpm/php-fpm.conf && \
+    sed -i 's|^pid = .*|pid = /var/run/php/php7.4-fpm.pid|g' /etc/php/7.4/fpm/php-fpm.conf && \
+    echo "clear_env = no" >> /etc/php/7.4/fpm/pool.d/www.conf
+
+# Ensure PHP-FPM can create its PID file
+RUN chown wpuser:wpuser /var/run/php/
 
 # Configuration script
 COPY tools/configure.sh /configure.sh

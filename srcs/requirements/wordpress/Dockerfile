@@ -9,7 +9,6 @@ RUN apt-get update && apt-get install -y \
     php-exif \
     php-fileinfo \
     php-mbstring \
-    php-openssl \
     php-xml \
     php-zip \
     php-phar \

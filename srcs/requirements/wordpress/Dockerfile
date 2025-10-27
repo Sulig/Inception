@@ -49,13 +49,12 @@ RUN sed -i 's/^listen = \/run\/php\/php7.4-fpm.sock/listen = 0.0.0.0:9000/g' /et
     sed -i 's/^user = www-data/user = wpuser/g' /etc/php/7.4/fpm/pool.d/www.conf && \
     sed -i 's/^group = www-data/group = wpuser/g' /etc/php/7.4/fpm/pool.d/www.conf && \
     sed -i 's/;daemonize = yes/daemonize = no/g' /etc/php/7.4/fpm/php-fpm.conf && \
-    sed -i 's|^error_log = .*|error_log = /var/log/php7.4-fpm/error.log|g' /etc/php/7.4/fpm/php-fpm.conf && \
+    sed -i 's|^error_log = .*|error_log = /proc/self/fd/2|g' /etc/php/7.4/fpm/php-fpm.conf && \
+    sed -i 's|^pid = .*|pid = /var/run/php/php7.4-fpm.pid|g' /etc/php/7.4/fpm/php-fpm.conf && \
     echo "clear_env = no" >> /etc/php/7.4/fpm/pool.d/www.conf
 
-# Create PHP-FPM error log file and set permissions
-RUN touch /var/log/php7.4-fpm/error.log && \
-    chown wpuser:wpuser /var/log/php7.4-fpm/error.log && \
-    chmod 644 /var/log/php7.4-fpm/error.log
+# Ensure PHP-FPM can create its PID file
+RUN chown wpuser:wpuser /var/run/php/
 
 # Configuration script
 COPY tools/configure.sh /configure.sh

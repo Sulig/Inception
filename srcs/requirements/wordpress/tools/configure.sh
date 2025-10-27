@@ -102,10 +102,11 @@ chmod -R 755 /var/www/html
 find /var/www/html -type d -exec chmod 755 {} \;
 find /var/www/html -type f -exec chmod 644 {} \;
 
-# Ensure PHP-FPM log directory permissions
-chown -R wpuser:wpuser /var/log/php7.4-fpm
-chmod 755 /var/log/php7.4-fpm
+# Ensure PHP-FPM directories have proper permissions
+mkdir -p /var/run/php
+chown -R wpuser:wpuser /var/run/php
+chmod 755 /var/run/php
 
 echo "🚀 Starting PHP-FPM..."
-# Start PHP-FPM as wpuser with proper configuration
-exec sudo -u wpuser php-fpm7.4 -F --fpm-config /etc/php/7.4/fpm/php-fpm.conf
+# Start PHP-FPM as root - it will handle user switching internally
+exec php-fpm7.4 -F

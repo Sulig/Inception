@@ -22,6 +22,9 @@ RUN apt-get update && apt-get install -y \
     sudo \
     && rm -rf /var/lib/apt/lists/*
 
+# Create WordPress user and group
+RUN groupadd -r wpuser && useradd -r -g wpuser -s /bin/bash -d /var/www/html wpuser
+
 # Install WP-CLI (most stable version)
 RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && \
     chmod +x wp-cli.phar && \
@@ -36,10 +39,12 @@ RUN wget https://wordpress.org/wordpress-6.5.2.tar.gz -O /tmp/wordpress.tar.gz &
     tar -xzf /tmp/wordpress.tar.gz -C /tmp && \
     cp -r /tmp/wordpress/* /var/www/html/ && \
     rm -rf /tmp/wordpress* && \
-    chown -R www-data:www-data /var/www/html
+    chown -R wpuser:wpuser /var/www/html
 
-# Configure PHP-FPM to listen on all interfaces
+# Configure PHP-FPM to use wpuser
 RUN sed -i 's/^listen = \/run\/php\/php7.4-fpm.sock/listen = 0.0.0.0:9000/g' /etc/php/7.4/fpm/pool.d/www.conf && \
+    sed -i 's/^user = www-data/user = wpuser/g' /etc/php/7.4/fpm/pool.d/www.conf && \
+    sed -i 's/^group = www-data/group = wpuser/g' /etc/php/7.4/fpm/pool.d/www.conf && \
     sed -i 's/;daemonize = yes/daemonize = no/g' /etc/php/7.4/fpm/php-fpm.conf && \
     echo "clear_env = no" >> /etc/php/7.4/fpm/pool.d/www.conf
 

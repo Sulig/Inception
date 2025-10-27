@@ -19,17 +19,13 @@ RUN apt-get update && apt-get install -y \
     curl \
     iputils-ping \
     netcat \
+    sudo \
     && rm -rf /var/lib/apt/lists/*
 
 # Install WP-CLI (most stable version)
 RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && \
     chmod +x wp-cli.phar && \
     mv wp-cli.phar /usr/local/bin/wp
-
-# Create a wrapper for WP-CLI that uses the correct user
-RUN echo '#!/bin/sh' > /usr/local/bin/wp-cli && \
-    echo 'sudo -u www-data /usr/local/bin/wp "$@" --path=/var/www/html' >> /usr/local/bin/wp-cli && \
-    chmod +x /usr/local/bin/wp-cli
 
 # Create necessary directories
 RUN mkdir -p /var/www/html && \

@@ -60,23 +60,23 @@ done
 echo "✅ Connected to MariaDB"
 
 # Continue with normal WordPress setup...
-if ! sudo -u www-data /usr/local/bin/wp core is-installed --path=/var/www/html 2>/dev/null; then
+if ! /usr/local/bin/wp core is-installed --path=/var/www/html 2>/dev/null; then
     echo "📀 WordPress is not installed, proceeding with setup..."
 
     if [ ! -f "/var/www/html/wp-config.php" ]; then
         echo "-- Creating wp-config.php..."
-        sudo -u www-data /usr/local/bin/wp config create \
+        /usr/local/bin/wp config create \
             --dbname=${WORDPRESS_DB_NAME} \
             --dbuser=${WORDPRESS_DB_USER} \
             --dbpass=${WORDPRESS_DB_PASSWORD} \
-            --dbhost=mariadb \
+            --dbhost=${WORDPRESS_DB_HOST} \
             --locale=en_US \
             --path=/var/www/html \
             --skip-check
     fi
 
     echo "🚀 Installing WordPress..."
-    sudo -u www-data /usr/local/bin/wp core install \
+    /usr/local/bin/wp core install \
         --url=https://${DOMAIN_NAME} \
         --title=${WORDPRESS_TITLE} \
         --admin_user=${WORDPRESS_ADMIN_USER} \
@@ -85,12 +85,13 @@ if ! sudo -u www-data /usr/local/bin/wp core is-installed --path=/var/www/html 2
         --path=/var/www/html \
         --skip-email
 
-    sudo -u www-data /usr/local/bin/wp language core install en_US --path=/var/www/html --activate
+    /usr/local/bin/wp language core install en_US --path=/var/www/html --activate
     echo "✅ WordPress installed and configured"
 else
     echo "✅ WordPress is already installed, skipping configuration"
 fi
 
+# Fix permissions
 chown -R www-data:www-data /var/www/html
 chmod -R 755 /var/www/html
 

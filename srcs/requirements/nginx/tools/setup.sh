@@ -1,5 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 set -e
+
+echo "🔧 Configuring Nginx..."
 
 # Create necessary directories
 mkdir -p /etc/nginx/certs
@@ -30,4 +32,4 @@ nginx -t
 
 echo "🚀 Starting Nginx..."
 # Start Nginx in the foreground
-exec nginx -g "daemon off;"s
+exec nginx -g "daemon off;"

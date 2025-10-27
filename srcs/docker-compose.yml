@@ -59,6 +59,8 @@ services:
       DOMAIN_NAME: ${DOMAIN_NAME}
     volumes:
       - wordpress_data:/var/www/html
+      - ./requirements/nginx/conf/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./requirements/nginx/conf/default.conf.template:/etc/nginx/conf.d/default.conf.template:ro
 
 networks:
   inception:

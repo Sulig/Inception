@@ -63,7 +63,7 @@ echo "✅ Connected to MariaDB"
 echo "🔐 Switching to wpuser for WordPress operations..."
 
 # Continue with normal WordPress setup...
-if ! sudo -u wpuser /usr/local/bin/wp core is-installed --path=/var/www/html 2>/dev/null; then
+if ! sudo -u wpuser /usr/local/bin/wp core is-installed --path=/var/www/html --allow-root 2>/dev/null; then
     echo "📀 WordPress is not installed, proceeding with setup..."
 
     if [ ! -f "/var/www/html/wp-config.php" ]; then
@@ -75,7 +75,8 @@ if ! sudo -u wpuser /usr/local/bin/wp core is-installed --path=/var/www/html 2>/
             --dbhost=${WORDPRESS_DB_HOST} \
             --locale=en_US \
             --path=/var/www/html \
-            --skip-check
+            --skip-check \
+            --allow-root
     fi
 
     echo "🚀 Installing WordPress..."
@@ -86,9 +87,10 @@ if ! sudo -u wpuser /usr/local/bin/wp core is-installed --path=/var/www/html 2>/
         --admin_password=${WORDPRESS_ADMIN_PASSWORD} \
         --admin_email=${WORDPRESS_ADMIN_EMAIL} \
         --path=/var/www/html \
-        --skip-email
+        --skip-email \
+        --allow-root
 
-    sudo -u wpuser /usr/local/bin/wp language core install en_US --path=/var/www/html --activate
+    sudo -u wpuser /usr/local/bin/wp language core install en_US --path=/var/www/html --activate --allow-root
     echo "✅ WordPress installed and configured"
 else
     echo "✅ WordPress is already installed, skipping configuration"
@@ -100,6 +102,10 @@ chmod -R 755 /var/www/html
 find /var/www/html -type d -exec chmod 755 {} \;
 find /var/www/html -type f -exec chmod 644 {} \;
 
-echo "🚀 Starting PHP-FPM as wpuser..."
-# Start PHP-FPM as wpuser
-exec sudo -u wpuser php-fpm7.4 -F
+# Ensure PHP-FPM log directory permissions
+chown -R wpuser:wpuser /var/log/php7.4-fpm
+chmod 755 /var/log/php7.4-fpm
+
+echo "🚀 Starting PHP-FPM..."
+# Start PHP-FPM as wpuser with proper configuration
+exec sudo -u wpuser php-fpm7.4 -F --fpm-config /etc/php/7.4/fpm/php-fpm.conf

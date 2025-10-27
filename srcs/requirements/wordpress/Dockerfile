@@ -30,9 +30,12 @@ RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli
     chmod +x wp-cli.phar && \
     mv wp-cli.phar /usr/local/bin/wp
 
-# Create necessary directories
+# Create necessary directories with proper permissions
 RUN mkdir -p /var/www/html && \
-    mkdir -p /var/run/php
+    mkdir -p /var/run/php && \
+    mkdir -p /var/log/php7.4-fpm && \
+    chown -R wpuser:wpuser /var/www/html && \
+    chown -R wpuser:wpuser /var/log/php7.4-fpm
 
 # Download WordPress
 RUN wget https://wordpress.org/wordpress-6.5.2.tar.gz -O /tmp/wordpress.tar.gz && \
@@ -41,12 +44,18 @@ RUN wget https://wordpress.org/wordpress-6.5.2.tar.gz -O /tmp/wordpress.tar.gz &
     rm -rf /tmp/wordpress* && \
     chown -R wpuser:wpuser /var/www/html
 
-# Configure PHP-FPM to use wpuser
+# Configure PHP-FPM to use wpuser and proper log paths
 RUN sed -i 's/^listen = \/run\/php\/php7.4-fpm.sock/listen = 0.0.0.0:9000/g' /etc/php/7.4/fpm/pool.d/www.conf && \
     sed -i 's/^user = www-data/user = wpuser/g' /etc/php/7.4/fpm/pool.d/www.conf && \
     sed -i 's/^group = www-data/group = wpuser/g' /etc/php/7.4/fpm/pool.d/www.conf && \
     sed -i 's/;daemonize = yes/daemonize = no/g' /etc/php/7.4/fpm/php-fpm.conf && \
+    sed -i 's|^error_log = .*|error_log = /var/log/php7.4-fpm/error.log|g' /etc/php/7.4/fpm/php-fpm.conf && \
     echo "clear_env = no" >> /etc/php/7.4/fpm/pool.d/www.conf
+
+# Create PHP-FPM error log file and set permissions
+RUN touch /var/log/php7.4-fpm/error.log && \
+    chown wpuser:wpuser /var/log/php7.4-fpm/error.log && \
+    chmod 644 /var/log/php7.4-fpm/error.log
 
 # Configuration script
 COPY tools/configure.sh /configure.sh

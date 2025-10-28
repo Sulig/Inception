@@ -6,7 +6,7 @@
 #    By: sadoming <sadoming@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/10/14 17:25:36 by sadoming          #+#    #+#              #
-#    Updated: 2025/10/21 12:09:29 by sadoming         ###   ########.fr        #
+#    Updated: 2025/10/28 19:45:10 by sadoming         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -67,8 +67,12 @@ setup:
 	@chmod 755 $(DATA_PATH)
 	@echo "$(G)✓ Dirs created$(DEF)"
 	@if [ ! -f ./srcs/.env ]; then \
-		echo "$(Y)⚠ Creating .env using the template$(DEF)"; \
-		cp ./srcs/.env.template ./srcs/.env 2>/dev/null || echo "$(R)✗ Template '.env.template' not found!$(DEF)"; \
+		echo "$(R)✗ Error: .env file not found!$(DEF)"; \
+		echo "$(Y)Please create ./srcs/.env from ./srcs/.env.template$(DEF)"; \
+		echo "$(Y)And configure it with your credentials.$(DEF)"; \
+		exit 1; \
+	else \
+		echo "$(G)✓ .env file found$(DEF)"; \
 	fi
 
 # Building Comands:

@@ -22,35 +22,6 @@ while ! mysql -h mariadb -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} -e "
   timeout=$((timeout - 3))
   if [ $timeout -le 0 ]; then
     echo "❌ Unable to connect to MariaDB after 90 seconds"
-
-    # Additional diagnosis
-    echo "~~ Connectivity Diagnostics:"
-    echo "   - Testing TCP connection to mariadb:3306..."
-    if nc -z mariadb 3306 &> /dev/null; then
-        echo "   ✅ Port 3306 is open"
-    else
-        echo "   ❌ Unable to connect to port 3306"
-    fi
-
-    echo "   - Verifying credentials..."
-    echo "     DB_HOST: ${WORDPRESS_DB_HOST}"
-    echo "     DB_USER: ${WORDPRESS_DB_USER}"
-    echo "     DB_NAME: ${WORDPRESS_DB_NAME}"
-
-    # Trying to connect without a specific database
-    if mysql -h mariadb -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} -e "SELECT 1;" 2>/dev/null; then
-        echo "   ✅ Can connect to the server, but not to the specific DB"
-        echo "   ~~ Checking if the database exists..."
-        if mysql -h mariadb -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} -e "SHOW DATABASES;" 2>/dev/null | grep -q "${WORDPRESS_DB_NAME}"; then
-            echo "   ✅ The database exists"
-        else
-            echo "   ❌ The database does NOT exist"
-        fi
-    else
-        echo "   ❌ Unable to connect to MariaDB server"
-    fi
-
-    # Continue anyway to see if WordPress can recover
     echo "** Continuing despite the error..."
     break
   fi
@@ -95,6 +66,24 @@ if ! sudo -u wpuser /usr/local/bin/wp core is-installed --path=/var/www/html --a
 else
     echo "✅ WordPress is already installed, skipping configuration"
 fi
+
+# Create second user (editor) if it doesn't exist
+echo "👤 Creating second user with editor role..."
+if ! sudo -u wpuser /usr/local/bin/wp user get ${WORDPRESS_USER} --field=id --path=/var/www/html --allow-root 2>/dev/null; then
+    sudo -u wpuser /usr/local/bin/wp user create ${WORDPRESS_USER} ${WORDPRESS_USER_EMAIL} \
+        --user_pass="${WORDPRESS_USER_PASSWORD}" \
+        --role=editor \
+        --display_name="Content Editor" \
+        --path=/var/www/html \
+        --allow-root
+    echo "✅ Second user '${WORDPRESS_USER}' created with editor role"
+else
+    echo "✅ Second user already exists"
+fi
+
+# Verify both users exist
+echo "📋 Verifying WordPress users:"
+sudo -u wpuser /usr/local/bin/wp user list --path=/var/www/html --allow-root
 
 # Fix permissions (as root)
 chown -R wpuser:wpuser /var/www/html

@@ -13,7 +13,7 @@ mkdir -p /var/log/nginx
 echo "📜 Generating SSL certificate for ${DOMAIN_NAME}..."
 openssl req -x509 -nodes -days 365 \
     -subj "/C=FR/ST=IDF/L=Paris/O=42/OU=Student/CN=${DOMAIN_NAME}" \
-    -addext "subjectAltName=DNS:${DOMAIN_NAME},DNS:www.${DOMAIN_NAME}" \
+    -addext "subjectAltName=DNS:${DOMAIN_NAME},DNS:www.${DOMAIN_NAME},DNS:adminer.${DOMAIN_NAME}" \
     -newkey rsa:2048 \
     -keyout /etc/nginx/certs/nginx.key \
     -out /etc/nginx/certs/nginx.crt

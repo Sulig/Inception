@@ -40,7 +40,7 @@ RUN wget https://wordpress.org/wordpress-6.5.2.tar.gz -O /tmp/wordpress.tar.gz &
 	tar -xzf /tmp/wordpress.tar.gz -C /tmp && \
 	cp -r /tmp/wordpress/* /var/www/html/ && \
 	rm -rf /tmp/wordpress* && \
-	chown -R wpuser:wpuser /var/www/html; \
+	chown -R wpuser:wpuser /var/www/html;
 
 # Configure PHP-FPM
 RUN sed -i 's/^listen = \/run\/php\/php7.4-fpm.sock/listen = 0.0.0.0:9000/g' /etc/php/7.4/fpm/pool.d/www.conf && \

@@ -67,9 +67,16 @@ else
     echo "✅ WordPress is already installed, skipping configuration"
 fi
 
-# Create second user (editor) if it doesn't exist
+# Create second user (editor) if it doesn't exist - CORREGIDO
 echo "👤 Creating second user with editor role..."
-if ! sudo -u wpuser /usr/local/bin/wp user get ${WORDPRESS_USER} --field=id --path=/var/www/html --allow-root 2>/dev/null; then
+set +e  # Temporarily disable error exit
+sudo -u wpuser /usr/local/bin/wp user get ${WORDPRESS_USER} --field=id --path=/var/www/html --allow-root >/dev/null 2>&1
+USER_EXISTS=$?
+set -e  # Re-enable error exit
+
+if [ $USER_EXISTS -eq 0 ]; then
+    echo "✅ Second user '${WORDPRESS_USER}' already exists"
+else
     sudo -u wpuser /usr/local/bin/wp user create ${WORDPRESS_USER} ${WORDPRESS_USER_EMAIL} \
         --user_pass="${WORDPRESS_USER_PASSWORD}" \
         --role=editor \
@@ -77,8 +84,6 @@ if ! sudo -u wpuser /usr/local/bin/wp user get ${WORDPRESS_USER} --field=id --pa
         --path=/var/www/html \
         --allow-root
     echo "✅ Second user '${WORDPRESS_USER}' created with editor role"
-else
-    echo "✅ Second user already exists"
 fi
 
 # Verify both users exist

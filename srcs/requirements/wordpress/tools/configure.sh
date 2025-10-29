@@ -3,18 +3,7 @@ set -e
 
 echo "-- Configuring WordPress..."
 
-# Check if we can resolve the hostname 'mariadb'
-echo "* Checking DNS resolution..."
-if ping -c 1 mariadb &> /dev/null; then
-    echo "✅ DNS resolves correctly"
-else
-    echo "❌ Cannot resolve 'mariadb'"
-    echo "~~ Network information:"
-    cat /etc/hosts
-    exit 1
-fi
-
-# Wait for MariaDB to be ready with diagnostics
+# Wait for MariaDB to be ready
 echo "⏳ Waiting for MariaDB..."
 timeout=90
 while ! mysql -h mariadb -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} -e "SELECT 1;" ${WORDPRESS_DB_NAME} 2>/dev/null; do
@@ -22,34 +11,32 @@ while ! mysql -h mariadb -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} -e "
   timeout=$((timeout - 3))
   if [ $timeout -le 0 ]; then
     echo "❌ Unable to connect to MariaDB after 90 seconds"
-    echo "** Continuing despite the error..."
-    break
+    exit 1
   fi
-  echo "-* Waiting for connection to MariaDB... ($timeout seconds remaining)"
+  echo "Waiting for connection to MariaDB... ($timeout seconds remaining)"
 done
 
 echo "✅ Connected to MariaDB"
 
-# Switch to wpuser for WordPress operations
-echo "🔐 Switching to wpuser for WordPress operations..."
-
-# Continue with normal WordPress setup...
-if ! sudo -u wpuser /usr/local/bin/wp core is-installed --path=/var/www/html --allow-root 2>/dev/null; then
+# Check if WordPress is already installed
+if sudo -u wpuser /usr/local/bin/wp core is-installed --path=/var/www/html --allow-root 2>/dev/null; then
+    echo "✅ WordPress is already installed, skipping setup"
+else
     echo "📀 WordPress is not installed, proceeding with setup..."
 
-    if [ ! -f "/var/www/html/wp-config.php" ]; then
-        echo "-- Creating wp-config.php..."
-        sudo -u wpuser /usr/local/bin/wp config create \
-            --dbname=${WORDPRESS_DB_NAME} \
-            --dbuser=${WORDPRESS_DB_USER} \
-            --dbpass=${WORDPRESS_DB_PASSWORD} \
-            --dbhost=${WORDPRESS_DB_HOST} \
-            --locale=en_US \
-            --path=/var/www/html \
-            --skip-check \
-            --allow-root
-    fi
+    # Create wp-config.php
+    echo "-- Creating wp-config.php..."
+    sudo -u wpuser /usr/local/bin/wp config create \
+        --dbname=${WORDPRESS_DB_NAME} \
+        --dbuser=${WORDPRESS_DB_USER} \
+        --dbpass=${WORDPRESS_DB_PASSWORD} \
+        --dbhost=${WORDPRESS_DB_HOST} \
+        --locale=en_US \
+        --path=/var/www/html \
+        --skip-check \
+        --allow-root
 
+    # Install WordPress
     echo "🚀 Installing WordPress..."
     sudo -u wpuser /usr/local/bin/wp core install \
         --url=https://${DOMAIN_NAME} \
@@ -61,59 +48,36 @@ if ! sudo -u wpuser /usr/local/bin/wp core is-installed --path=/var/www/html --a
         --skip-email \
         --allow-root
 
+    # Install language
     sudo -u wpuser /usr/local/bin/wp language core install en_US --path=/var/www/html --activate --allow-root
-    echo "✅ WordPress installed and configured"
-else
-    echo "✅ WordPress is already installed, skipping configuration"
-fi
 
-# Create second user (editor) if it doesn't exist - CORREGIDO
-echo "👤 Creating second user with editor role..."
-set +e  # Temporarily disable error exit
-sudo -u wpuser /usr/local/bin/wp user get ${WORDPRESS_USER} --field=id --path=/var/www/html --allow-root >/dev/null 2>&1
-USER_EXISTS=$?
-set -e  # Re-enable error exit
-
-if [ $USER_EXISTS -eq 0 ]; then
-    echo "✅ Second user '${WORDPRESS_USER}' already exists"
-else
-    # Suppress error output from wp user create to avoid "already registered" messages
-    sudo -u wpuser /usr/local/bin/wp user create ${WORDPRESS_USER} ${WORDPRESS_USER_EMAIL} \
-        --user_pass="${WORDPRESS_USER_PASSWORD}" \
-        --role=editor \
-        --display_name="Content Editor" \
-        --path=/var/www/html \
-        --allow-root 2>/dev/null
-
-    # Verify the user was actually created
-    set +e
-    sudo -u wpuser /usr/local/bin/wp user get ${WORDPRESS_USER} --field=id --path=/var/www/html --allow-root >/dev/null 2>&1
-    CREATION_SUCCESS=$?
-    set -e
-
-    if [ $CREATION_SUCCESS -eq 0 ]; then
-        echo "✅ Second user '${WORDPRESS_USER}' created with editor role"
+    # Create second user ONLY if it doesn't exist
+    echo "👤 Checking second user..."
+    if ! sudo -u wpuser /usr/local/bin/wp user get ${WORDPRESS_USER} --field=id --path=/var/www/html --allow-root 2>/dev/null; then
+        echo "Creating second user '${WORDPRESS_USER}'..."
+        sudo -u wpuser /usr/local/bin/wp user create ${WORDPRESS_USER} ${WORDPRESS_USER_EMAIL} \
+            --user_pass="${WORDPRESS_USER_PASSWORD}" \
+            --role=editor \
+            --display_name="Content Editor" \
+            --path=/var/www/html \
+            --allow-root
+        echo "✅ Second user created"
     else
-        echo "⚠️  User '${WORDPRESS_USER}' may already exist or creation failed"
+        echo "✅ Second user already exists"
     fi
+
+    echo "✅ WordPress setup complete"
 fi
 
-# Verify both users exist
-echo "📋 Verifying WordPress users:"
-sudo -u wpuser /usr/local/bin/wp user list --path=/var/www/html --allow-root
-
-# Fix permissions (as root)
+# Fix permissions
+echo "🔧 Setting permissions..."
 chown -R www-data:www-data /var/www/html
-chmod -R 755 /var/www/html
 find /var/www/html -type d -exec chmod 755 {} \;
 find /var/www/html -type f -exec chmod 644 {} \;
 
-# Ensure PHP-FPM directories have proper permissions
+# Ensure PHP-FPM directories
 mkdir -p /var/run/php
 chown -R www-data:www-data /var/run/php
-chmod 755 /var/run/php
 
 echo "🚀 Starting PHP-FPM..."
-# Start PHP-FPM as root - it will handle user switching internally
 exec php-fpm7.4 -F
-#php-fpm7.4 -D && nginx -g "daemon off;"

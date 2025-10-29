@@ -103,16 +103,17 @@ echo "📋 Verifying WordPress users:"
 sudo -u wpuser /usr/local/bin/wp user list --path=/var/www/html --allow-root
 
 # Fix permissions (as root)
-chown -R wpuser:wpuser /var/www/html
+chown -R www-data:www-data /var/www/html
 chmod -R 755 /var/www/html
 find /var/www/html -type d -exec chmod 755 {} \;
 find /var/www/html -type f -exec chmod 644 {} \;
 
 # Ensure PHP-FPM directories have proper permissions
 mkdir -p /var/run/php
-chown -R wpuser:wpuser /var/run/php
+chown -R www-data:www-data /var/run/php
 chmod 755 /var/run/php
 
 echo "🚀 Starting PHP-FPM..."
 # Start PHP-FPM as root - it will handle user switching internally
 exec php-fpm7.4 -F
+#php-fpm7.4 -D && nginx -g "daemon off;"

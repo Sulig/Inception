@@ -6,7 +6,7 @@
 #    By: sadoming <sadoming@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/10/14 17:25:36 by sadoming          #+#    #+#              #
-#    Updated: 2025/10/28 19:45:10 by sadoming         ###   ########.fr        #
+#    Updated: 2025/10/29 13:22:41 by sadoming         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -111,7 +111,7 @@ nginx: build
 #--------------------
 # Status and Debug commands:
 ps:
-	@cd srcs && $(COMPOSE) ps
+	@cd srcs && $(COMPOSE) ps -a
 
 status:
 	@echo "$(B)=== Service Status ===$(DEF)"

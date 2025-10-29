@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eux
+set -eu
 
 # 1) Prepare data directory
 DATADIR=/var/lib/mysql

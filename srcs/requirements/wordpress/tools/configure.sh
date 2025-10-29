@@ -77,13 +77,25 @@ set -e  # Re-enable error exit
 if [ $USER_EXISTS -eq 0 ]; then
     echo "✅ Second user '${WORDPRESS_USER}' already exists"
 else
+    # Suppress error output from wp user create to avoid "already registered" messages
     sudo -u wpuser /usr/local/bin/wp user create ${WORDPRESS_USER} ${WORDPRESS_USER_EMAIL} \
         --user_pass="${WORDPRESS_USER_PASSWORD}" \
         --role=editor \
         --display_name="Content Editor" \
         --path=/var/www/html \
-        --allow-root
-    echo "✅ Second user '${WORDPRESS_USER}' created with editor role"
+        --allow-root 2>/dev/null
+
+    # Verify the user was actually created
+    set +e
+    sudo -u wpuser /usr/local/bin/wp user get ${WORDPRESS_USER} --field=id --path=/var/www/html --allow-root >/dev/null 2>&1
+    CREATION_SUCCESS=$?
+    set -e
+
+    if [ $CREATION_SUCCESS -eq 0 ]; then
+        echo "✅ Second user '${WORDPRESS_USER}' created with editor role"
+    else
+        echo "⚠️  User '${WORDPRESS_USER}' may already exist or creation failed"
+    fi
 fi
 
 # Verify both users exist

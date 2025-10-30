@@ -82,8 +82,9 @@ services:
     container_name: ftp
     restart: unless-stopped
     ports:
-      - "20-21:20-21/tcp"
-      - "40000-40009:40000-40009"
+      - "20:20"
+      - "21:21"
+      - "30000-30009:30000-30009"
     networks:
       - inception
     depends_on:
@@ -91,6 +92,7 @@ services:
     env_file:
       - .env
     environment:
+      PUBLICHOST: "localhost"
       FTP_USERNAME: ${FTP_USERNAME}
       FTP_PASSWORD: ${FTP_PASSWORD}
     volumes:

@@ -76,28 +76,6 @@ services:
     depends_on:
       - mariadb
 
-  ftp:
-    build: ./requirements/ftp
-    image: ftp
-    container_name: ftp
-    restart: unless-stopped
-    ports:
-      - "20:20"
-      - "21:21"
-      - "30000-30009:30000-30009"
-    networks:
-      - inception
-    depends_on:
-      - wordpress
-    env_file:
-      - .env
-    environment:
-      PUBLICHOST: "localhost"
-      FTP_USERNAME: ${FTP_USERNAME}
-      FTP_PASSWORD: ${FTP_PASSWORD}
-    volumes:
-      - wordpress_data:/var/www/html
-
 networks:
   inception:
     driver: bridge
